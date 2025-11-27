@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  firestore:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud emulators firestore start --project=local-project --host-port=0.0.0.0:8695
+    ports:
+      - "8695:8695"
+
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud beta emulators pubsub start --project=local-project --host-port=0.0.0.0:8085
+    ports:
+      - "8085:8085"

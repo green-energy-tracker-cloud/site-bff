@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: site-bff
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  cloud:
+    gcp:
+      project-id: local-project
+      core:
+        credentials:
+          enabled: false
+      pubsub:
+        emulator-host: localhost:8085
+        topic:
+          site-events: site-events
+      firestore:
+        emulator:
+          enabled: true
+        host-port: localhost:8695

@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.5.8</version> <relativePath/>
+	</parent>
+	<groupId>com.green-energy-tracker-cloud</groupId>
+	<artifactId>site-bff</artifactId>
+	<version>1.0.0</version>
+	<name>site-bff</name>
+	<description>Backend For Frontend for the Site</description>
+
+	<properties>
+		<java.version>21</java.version>
+		<spring-cloud-gcp.version>5.1.0</spring-cloud-gcp.version>
+		<spring-cloud.version>2023.0.0</spring-cloud.version>
+		<api-contracts.version>1.1.0</api-contracts.version>
+		<protobuf.version>4.28.2</protobuf.version>
+		<jackson-protobuf.version>0.9.13</jackson-protobuf.version>
+		<artifact-registry-wagon.version>2.2.5</artifact-registry-wagon.version>
+		<openapi.generator.version>7.1.0</openapi.generator.version>
+		<swagger.annotations.version>2.2.27</swagger.annotations.version>
+		<jackson.databind.version>0.2.6</jackson.databind.version>
+		<openapi.ui.version>2.8.3</openapi.ui.version>
+		<map.struct.version>1.6.3</map.struct.version>
+		<mockito.inline.version>3.8.0</mockito.inline.version>
+		<map.lombok.mapstruct.version>0.2.0</map.lombok.mapstruct.version>
+		<url.api.contracts.repo>artifactregistry://us-east1-maven.pkg.dev/green-energy-tracker-cloud/api-contracts-repo</url.api.contracts.repo>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.green.energy.tracker.cloud</groupId>
+			<artifactId>api-contracts</artifactId>
+			<version>${api-contracts.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>${protobuf.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.hubspot.jackson</groupId>
+			<artifactId>jackson-datatype-protobuf</artifactId>
+			<version>${jackson-protobuf.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>spring-cloud-gcp-starter</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>spring-cloud-gcp-starter-pubsub</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>spring-cloud-gcp-starter-data-firestore</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>${map.struct.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-inline</artifactId>
+			<version>${mockito.inline.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-annotations</artifactId>
+			<version>${swagger.annotations.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.openapitools</groupId>
+			<artifactId>jackson-databind-nullable</artifactId>
+			<version>${jackson.databind.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+			<version>${openapi.ui.version}</version>
+		</dependency>
+	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.google.cloud</groupId>
+				<artifactId>spring-cloud-gcp-dependencies</artifactId>
+				<version>${spring-cloud-gcp.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<extensions>
+			<extension>
+				<groupId>com.google.cloud.artifactregistry</groupId>
+				<artifactId>artifactregistry-maven-wagon</artifactId>
+				<version>${artifact-registry-wagon.version}</version>
+			</extension>
+		</extensions>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok-mapstruct-binding</artifactId>
+							<version>${map.lombok.mapstruct.version}</version>
+						</path>
+						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>${map.struct.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>unpack-contracts</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.green.energy.tracker.cloud</groupId>
+									<artifactId>api-contracts</artifactId>
+									<version>${api-contracts.version}</version>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/openapi-specs</outputDirectory>
+									<includes>openapi/v1/*.yaml</includes>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.openapitools</groupId>
+				<artifactId>openapi-generator-maven-plugin</artifactId>
+				<version>${openapi.generator.version}</version>
+				<configuration>
+					<modelNameSuffix>Dto</modelNameSuffix>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<inputSpec>${project.build.directory}/openapi-specs/openapi/v1/site-service.yaml</inputSpec>
+							<generatorName>spring</generatorName>
+							<library>spring-boot</library>
+							<modelPackage>com.green.energy.tracker.cloud.sitebff.web.model</modelPackage>
+							<apiPackage>com.green.energy.tracker.cloud.sitebff.web.api</apiPackage>
+							<configOptions>
+								<interfaceOnly>true</interfaceOnly>
+								<useSpringBoot3>true</useSpringBoot3>
+								<reactive>true</reactive>
+								<skipDefaultInterface>true</skipDefaultInterface>
+							</configOptions>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>artifact-registry</id>
+			<url>${url.api.contracts.repo}</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+
+</project>
