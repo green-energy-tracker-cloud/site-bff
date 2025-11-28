@@ -1,3 +1,7 @@
 spring:
   application:
     name: site-bff
+  data:
+    redis:
+      repositories:
+        enabled: false

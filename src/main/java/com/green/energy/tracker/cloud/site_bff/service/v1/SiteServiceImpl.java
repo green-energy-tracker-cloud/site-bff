@@ -21,7 +21,6 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,9 +30,15 @@ import java.util.UUID;
 public class SiteServiceImpl implements SiteService {
     @Value("${spring.cloud.gcp.pubsub.topic.site-events}")
     private String siteEventsTopic;
+    @Value("${pagination.default.page:0}")
+    private int defaultPage;
+    @Value("${pagination.default.size:10}")
+    private int defaultPageSize;
+
     private final PubSubPublisherTemplate publisherTemplate;
     private final SiteMapper siteMapper;
     private final SiteRepository siteRepository;
+    private final SiteCacheService siteCacheService;
 
     @Override
     public Mono<AsyncOperationResponseDto> create(SiteRequestDto siteRequestDto) {
@@ -52,33 +57,14 @@ public class SiteServiceImpl implements SiteService {
 
     @Override
     public Mono<SiteResponseDto> get(UUID id) {
-        return siteRepository.findById(id.toString())
-                .map(siteMapper::toDto)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        String.format("Site with id %s not found", id)
-                )));
+        return siteCacheService.getSite(id, () -> getSiteFromDb(id));
     }
 
     @Override
     public Mono<ListSitesResponseDto> getAllByUserId(UUID userId, Integer page, Integer size) {
-        int pageNum = page >= 0 ? page : 0;
-        int pageSize = size >= 0 ? size : 10;
-        var pageable = PageRequest.of(pageNum, pageSize);
-        var countByUserId = siteRepository.countByUserId(userId.toString());
-        var sitesList = siteRepository.findAllByUserId(userId.toString(), pageable)
-                .map(siteMapper::toDto)
-                .collectList();
-        return Mono.zip(countByUserId, sitesList)
-                .map(tuple -> {
-                    var totalElements = tuple.getT1();
-                    var sites = tuple.getT2();
-                    var listSitesResponseDto = new ListSitesResponseDto();
-                    listSitesResponseDto.setTotalCount(Math.toIntExact(totalElements));
-                    listSitesResponseDto.setSites(sites);
-                    listSitesResponseDto.setTotalPages((int) Math.ceil((double) totalElements / pageSize));
-                    return listSitesResponseDto;
-                });
+        int pageNum = (page != null && page >= 0) ? page : defaultPage;
+        int pageSize = (size != null && size > 0) ? size : defaultPageSize;
+        return siteCacheService.getSitesByUserId(userId, pageNum, pageSize, () -> getSitesByUserIdFromDb(userId, pageNum, pageSize));
     }
 
     @Override
@@ -135,5 +121,30 @@ public class SiteServiceImpl implements SiteService {
         asyncResponse.setStatus(AsyncOperationResponseDto.StatusEnum.ACCEPTED);
         asyncResponse.setMessage("Request queued. Trace ID: " + messageId);
         return asyncResponse;
+    }
+
+    private Mono<SiteResponseDto> getSiteFromDb(UUID id) {
+        return siteRepository
+                .findById(id.toString())
+                .map(siteMapper::toDto)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Site with id %s not found", id))));
+    }
+
+    private Mono<ListSitesResponseDto> getSitesByUserIdFromDb(UUID userId, int page, int size) {
+        var pageable = PageRequest.of(page, size);
+        var countByUserId = siteRepository.countByUserId(userId.toString());
+        var sitesList = siteRepository.findAllByUserId(userId.toString(), pageable)
+                .map(siteMapper::toDto)
+                .collectList();
+        return Mono.zip(countByUserId, sitesList)
+                .map(tuple -> {
+                    var totalElements = tuple.getT1();
+                    var sites = tuple.getT2();
+                    var listSitesResponseDto = new ListSitesResponseDto();
+                    listSitesResponseDto.setTotalCount(Math.toIntExact(totalElements));
+                    listSitesResponseDto.setSites(sites);
+                    listSitesResponseDto.setTotalPages((int) Math.ceil((double) totalElements / size));
+                    return listSitesResponseDto;
+                });
     }
 }

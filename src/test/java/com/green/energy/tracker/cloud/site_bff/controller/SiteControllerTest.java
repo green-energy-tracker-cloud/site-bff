@@ -2,10 +2,11 @@ package com.green.energy.tracker.cloud.site_bff.controller;
 
 import com.green.energy.tracker.cloud.site_bff.service.v1.SiteService;
 import com.green.energy.tracker.cloud.sitebff.web.model.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -15,14 +16,18 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@WebFluxTest(SiteController.class)
+@ExtendWith(MockitoExtension.class)
 class SiteControllerTest {
 
-    @Autowired
     private WebTestClient webTestClient;
 
-    @MockBean
+    @Mock
     private SiteService siteService;
+
+    @BeforeEach
+    void setUp() {
+        webTestClient = WebTestClient.bindToController(new SiteController(siteService)).build();
+    }
 
     private SiteRequestDto createValidSiteRequestDto() {
         var siteRequestDto = new SiteRequestDto();
