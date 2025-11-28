@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -26,6 +27,12 @@ public class SiteCacheServiceImpl implements SiteCacheService {
     private int defaultPage;
     @Value("${pagination.default.size:10}")
     private int defaultPageSize;
+    @Value("${retry.max-attempts}")
+    private Long maxAttempts;
+    @Value("${retry.min-backoff-millis}")
+    private Long minBackoffMillis;
+    @Value("${retry.max-backoff-millis}")
+    private Long maxBackoffMillis;
 
     private final ReactiveRedisTemplate<String, SiteResponseDto> siteRedisTemplate;
     private final ReactiveRedisTemplate<String, ListSitesResponseDto> siteListRedisTemplate;
@@ -49,10 +56,16 @@ public class SiteCacheServiceImpl implements SiteCacheService {
         return template
                 .opsForValue()
                 .get(cacheKey)
+                .retryWhen(Retry.backoff(maxAttempts, Duration.ofMillis(minBackoffMillis))
+                        .maxBackoff(Duration.ofMillis(maxBackoffMillis))
+                        .doBeforeRetry(retrySignal -> doBeforeRetryCache(logContext, retrySignal) ))
                 .switchIfEmpty(
                         fallback.flatMap(dto ->
                                 template.opsForValue()
                                         .set(cacheKey, dto, Duration.ofSeconds(cacheTtlSeconds))
+                                        .retryWhen(Retry.backoff(maxAttempts, Duration.ofMillis(minBackoffMillis))
+                                                .maxBackoff(Duration.ofMillis(maxBackoffMillis))
+                                                .doBeforeRetry(retrySignal -> doBeforeRetryCache(logContext, retrySignal)))
                                         .thenReturn(dto)
                                         .onErrorResume(e -> {
                                             log.warn("Failed to cache {}. Reason: {}", logContext, e.getMessage());
@@ -73,4 +86,13 @@ public class SiteCacheServiceImpl implements SiteCacheService {
     private String buildUserSitesCacheKey(UUID userId, int page, int size) {
         return prefixKey + ":user:" + userId + ":page:" + page + ":size:" + size;
     }
+
+    private void doBeforeRetryCache(String logContext, Retry.RetrySignal retrySignal){
+        log.warn("Retrying Redis operation for {}. Attempt {}/{} due to: {}",
+                logContext,
+                retrySignal.totalRetriesInARow() + 1,
+                maxAttempts,
+                retrySignal.failure().getMessage());
+    }
+
 }

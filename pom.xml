@@ -28,6 +28,7 @@
 		<map.struct.version>1.6.3</map.struct.version>
 		<mockito.inline.version>3.8.0</mockito.inline.version>
 		<map.lombok.mapstruct.version>0.2.0</map.lombok.mapstruct.version>
+		<logstash.logback.version>7.4</logstash.logback.version>
 		<url.api.contracts.repo>artifactregistry://us-east1-maven.pkg.dev/green-energy-tracker-cloud/api-contracts-repo</url.api.contracts.repo>
 	</properties>
 
@@ -130,6 +131,12 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
 			<version>${openapi.ui.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>${logstash.logback.version}</version>
 		</dependency>
 	</dependencies>
 

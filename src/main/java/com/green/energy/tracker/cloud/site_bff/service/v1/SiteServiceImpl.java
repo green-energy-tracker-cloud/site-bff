@@ -19,7 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
-
+import reactor.util.retry.Retry;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -34,6 +35,12 @@ public class SiteServiceImpl implements SiteService {
     private int defaultPage;
     @Value("${pagination.default.size:10}")
     private int defaultPageSize;
+    @Value("${retry.max-attempts}")
+    private Long maxAttempts;
+    @Value("${retry.min-backoff-millis}")
+    private Long minBackoffMillis;
+    @Value("${retry.max-backoff-millis}")
+    private Long maxBackoffMillis;
 
     private final PubSubPublisherTemplate publisherTemplate;
     private final SiteMapper siteMapper;
@@ -112,6 +119,9 @@ public class SiteServiceImpl implements SiteService {
             messageBuilder.setData(payload.toByteString());
 
         return Mono.fromFuture(publisherTemplate.publish(siteEventsTopic, messageBuilder.build()))
+                .retryWhen(Retry.backoff(maxAttempts, Duration.ofMillis(minBackoffMillis))
+                        .maxBackoff(Duration.ofMillis(maxBackoffMillis))
+                        .doBeforeRetry(retrySignal -> doBeforeRetryPubSub(retrySignal, eventType.name())))
                 .map(messageId -> createAsyncOperationResponseDto(messageId, id));
     }
 
@@ -126,14 +136,23 @@ public class SiteServiceImpl implements SiteService {
     private Mono<SiteResponseDto> getSiteFromDb(UUID id) {
         return siteRepository
                 .findById(id.toString())
+                .retryWhen(Retry.backoff(maxAttempts, Duration.ofMillis(minBackoffMillis))
+                        .maxBackoff(Duration.ofMillis(maxBackoffMillis))
+                        .doBeforeRetry(retrySignal -> doBeforeRetryFirestore(retrySignal, "findById")))
                 .map(siteMapper::toDto)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Site with id %s not found", id))));
     }
 
     private Mono<ListSitesResponseDto> getSitesByUserIdFromDb(UUID userId, int page, int size) {
         var pageable = PageRequest.of(page, size);
-        var countByUserId = siteRepository.countByUserId(userId.toString());
+        var countByUserId = siteRepository.countByUserId(userId.toString())
+                .retryWhen(Retry.backoff(maxAttempts, Duration.ofMillis(minBackoffMillis))
+                        .maxBackoff(Duration.ofMillis(maxBackoffMillis))
+                        .doBeforeRetry(retrySignal -> doBeforeRetryFirestore(retrySignal, "countByUserId")));
         var sitesList = siteRepository.findAllByUserId(userId.toString(), pageable)
+                .retryWhen(Retry.backoff(maxAttempts, Duration.ofMillis(minBackoffMillis))
+                        .maxBackoff(Duration.ofMillis(maxBackoffMillis))
+                        .doBeforeRetry(retrySignal -> doBeforeRetryFirestore(retrySignal, "findAllByUserId")))
                 .map(siteMapper::toDto)
                 .collectList();
         return Mono.zip(countByUserId, sitesList)
@@ -146,5 +165,21 @@ public class SiteServiceImpl implements SiteService {
                     listSitesResponseDto.setTotalPages((int) Math.ceil((double) totalElements / size));
                     return listSitesResponseDto;
                 });
+    }
+
+    private void doBeforeRetryFirestore(Retry.RetrySignal retrySignal, String method){
+        log.warn("Retrying Firestore {}. Attempt {}/{} due to: {}",
+                method,
+                retrySignal.totalRetriesInARow() + 1,
+                maxAttempts,
+                retrySignal.failure().getMessage());
+    }
+
+    private void doBeforeRetryPubSub(Retry.RetrySignal retrySignal, String eventType){
+        log.warn("Retrying Pub/Sub publish for event type {}. Attempt {}/{} due to: {}",
+                eventType,
+                retrySignal.totalRetriesInARow() + 1,
+                maxAttempts,
+                retrySignal.failure().getMessage());
     }
 }
