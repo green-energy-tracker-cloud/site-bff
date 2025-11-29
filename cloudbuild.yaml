@@ -11,7 +11,7 @@ options:
 
 steps:
   - id: "Unit Test"
-    name: "name: 'gcr.io/cloud-builders/mvn'"
+    name: 'gcr.io/cloud-builders/mvn'
     args: [ 'clean', 'test' ]
 
   - id: "Start Dependencies for Integration Test"
