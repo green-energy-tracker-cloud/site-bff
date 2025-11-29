@@ -1,8 +1,7 @@
 package com.green.energy.tracker.cloud.site_bff.model;
 
+import com.google.cloud.Timestamp;
 import org.junit.jupiter.api.Test;
-
-import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -11,7 +10,7 @@ class SiteReadDocumentTest {
     @Test
     void testLombokMethods() {
         // Arrange
-        var now = OffsetDateTime.now();
+        var now = Timestamp.now();
         var location = new GeoLocationRead(10.0, 20.0);
 
         // Act

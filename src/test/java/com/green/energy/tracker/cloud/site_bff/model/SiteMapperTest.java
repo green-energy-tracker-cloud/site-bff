@@ -1,10 +1,13 @@
 package com.green.energy.tracker.cloud.site_bff.model;
 
+import com.google.cloud.Timestamp;
 import com.green.energy.tracker.cloud.sitebff.web.model.SiteResponseDto;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,7 +19,8 @@ class SiteMapperTest {
     @Test
     void toDto_shouldMapAllFields() {
         // Arrange
-        var now = OffsetDateTime.now();
+        var now = Timestamp.now();
+        var expectedOffsetDateTime = OffsetDateTime.ofInstant(Instant.ofEpochSecond(now.getSeconds(), now.getNanos()), ZoneOffset.UTC);
         var siteId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var location = GeoLocationRead.builder()
@@ -46,14 +50,14 @@ class SiteMapperTest {
         assertNotNull(result.getLocation());
         assertEquals(40.7128, result.getLocation().getLatitude());
         assertEquals(-74.0060, result.getLocation().getLongitude());
-        assertEquals(now, result.getCreatedAt());
-        assertEquals(now, result.getUpdatedAt());
+        assertEquals(expectedOffsetDateTime, result.getCreatedAt());
+        assertEquals(expectedOffsetDateTime, result.getUpdatedAt());
     }
 
     @Test
     void toDto_withNullLocation_shouldHandleGracefully() {
         // Arrange
-        var now = OffsetDateTime.now();
+        var now = Timestamp.now();
         var siteId = UUID.randomUUID();
         var userId = UUID.randomUUID();
         var document = SiteReadDocument.builder()

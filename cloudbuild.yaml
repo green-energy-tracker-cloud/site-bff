@@ -15,7 +15,7 @@ steps:
     args: [ 'mvn', 'clean', 'test' ]
 
   - id: "Start Dependencies for Integration Test"
-    name: "docker/compose:1.29.2"
+    name: 'docker/compose:1.29.2'
     args: [ 'up', '-d' ]
     waitFor:
       - "Unit Test"
@@ -27,5 +27,5 @@ steps:
       - "Start Dependencies for Integration Test"
 
   - id: "Stop Dependencies"
-    name: "docker/compose:1.29.2"
+    name: 'docker/compose:1.29.2'
     args: [ 'down' ]

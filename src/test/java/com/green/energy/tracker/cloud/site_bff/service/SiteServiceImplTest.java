@@ -1,5 +1,6 @@
 package com.green.energy.tracker.cloud.site_bff.service;
 
+import com.google.cloud.Timestamp;
 import com.google.cloud.spring.pubsub.core.publisher.PubSubPublisherTemplate;
 import com.green.energy.tracker.cloud.site_bff.model.GeoLocationRead;
 import com.green.energy.tracker.cloud.site_bff.model.SiteMapper;
@@ -648,8 +649,8 @@ class SiteServiceImplTest {
                         .latitude(40.7128)
                         .longitude(-74.0060)
                         .build())
-                .createdAt(OffsetDateTime.now())
-                .updatedAt(OffsetDateTime.now())
+                .createdAt(Timestamp.now())
+                .updatedAt(Timestamp.now())
                 .build();
     }
 
