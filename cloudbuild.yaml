@@ -12,7 +12,7 @@ options:
 steps:
   - id: "Unit Test"
     name: 'maven:3.9-eclipse-temurin-21'
-    args: [ 'clean', 'test' ]
+    args: [ 'mvn', 'clean', 'test' ]
 
   - id: "Start Dependencies for Integration Test"
     name: "docker/compose:1.29.2"
@@ -22,7 +22,7 @@ steps:
 
   - id: "Integration Test"
     name: 'maven:3.9-eclipse-temurin-21'
-    args: [ 'clean', 'verify' ]
+    args: [ 'mvn', 'clean', 'verify' ]
     waitFor:
       - "Start Dependencies for Integration Test"
 
