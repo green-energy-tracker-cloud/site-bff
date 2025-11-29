@@ -23,9 +23,6 @@ steps:
   - id: "Integration Test"
     name: "gcr.io/cloud-builders/mvn"
     args: [ 'clean', 'verify' ]
-    volumes:
-      - name: 'maven-cache'
-        path: '/root/.m2'
     waitFor:
       - "Start Dependencies for Integration Test"
 
