@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -136,6 +137,55 @@ class SiteControllerAdviceTest {
                     // FIX: Assert that the map is empty, not null, to match the DTO's behavior.
                     assertNotNull(apiError.getValidationErrors());
                     assertTrue(apiError.getValidationErrors().isEmpty());
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void handleValidationErrors_withNullDefaultMessage_shouldUseUnknownError() throws NoSuchMethodException {
+        // Arrange
+        BindingResult bindingResult = mock(BindingResult.class);
+        var fieldError = new FieldError("siteRequestDto", "name", null); // null default message
+        when(bindingResult.getAllErrors()).thenReturn(List.of(fieldError));
+
+        var methodParameter = new MethodParameter(this.getClass().getDeclaredMethod("setUp"), -1);
+        var exception = new WebExchangeBindException(methodParameter, bindingResult);
+
+        // Act
+        Mono<ResponseEntity<ApiErrorDto>> result = siteControllerAdvice.handleValidationErrors(exception, exchange);
+
+        // Assert
+        StepVerifier.create(result)
+                .assertNext(responseEntity -> {
+                    assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+                    ApiErrorDto apiError = responseEntity.getBody();
+                    assertNotNull(apiError);
+                    assertNotNull(apiError.getValidationErrors());
+                    assertEquals("Unknown error", apiError.getValidationErrors().get("name"));
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void handleResponseStatusException_withNonHttpStatusCode_shouldUseToString() {
+        // Arrange
+        HttpStatusCode customStatus = HttpStatusCode.valueOf(499);
+        var reason = "Custom error reason";
+        var exception = new ResponseStatusException(customStatus, reason);
+
+        // Act
+        Mono<ResponseEntity<ApiErrorDto>> result = siteControllerAdvice.handleResponseStatusException(exception, exchange);
+
+        // Assert
+        StepVerifier.create(result)
+                .assertNext(responseEntity -> {
+                    assertEquals(customStatus, responseEntity.getStatusCode());
+                    ApiErrorDto apiError = responseEntity.getBody();
+                    assertNotNull(apiError);
+                    assertEquals(499, apiError.getStatus());
+                    assertEquals("499", apiError.getError());
+                    assertEquals(reason, apiError.getMessage());
+                    assertEquals("/test-path", apiError.getPath());
                 })
                 .verifyComplete();
     }

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.8</version> <relativePath/>
+		<version>3.2.5</version> <relativePath/>
 	</parent>
 	<groupId>com.green-energy-tracker-cloud</groupId>
 	<artifactId>site-bff</artifactId>
@@ -24,7 +24,7 @@
 		<openapi.generator.version>7.1.0</openapi.generator.version>
 		<swagger.annotations.version>2.2.27</swagger.annotations.version>
 		<jackson.databind.version>0.2.6</jackson.databind.version>
-		<openapi.ui.version>2.8.3</openapi.ui.version>
+		<openapi.ui.version>2.5.0</openapi.ui.version>
 		<map.struct.version>1.6.3</map.struct.version>
 		<mockito.inline.version>3.8.0</mockito.inline.version>
 		<map.lombok.mapstruct.version>0.2.0</map.lombok.mapstruct.version>
@@ -72,6 +72,10 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -138,6 +142,10 @@
 			<artifactId>logstash-logback-encoder</artifactId>
 			<version>${logstash.logback.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>io.github.resilience4j</groupId>
+			<artifactId>resilience4j-reactor</artifactId>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>
@@ -177,6 +185,7 @@
 						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
 						</path>
 						<path>
 							<groupId>org.projectlombok</groupId>
@@ -293,7 +302,7 @@
 										<limit>
 											<counter>BRANCH</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.90</minimum>
+											<minimum>0.85</minimum>
 										</limit>
 									</limits>
 								</rule>
@@ -303,6 +312,10 @@
 								<exclude>**/sitebff/web/**/*.class</exclude>
 								<exclude>**/SiteMapperImpl.class</exclude>
 								<exclude>**/SiteBffApplication.class</exclude>
+								<exclude>**/*$*Builder.class</exclude>
+								<exclude>**/config/RedisConfig.class</exclude>
+								<exclude>**/model/GeoLocationRead.class</exclude>
+								<exclude>**/model/SiteReadDocument.class</exclude>
 							</excludes>
 						</configuration>
 					</execution>

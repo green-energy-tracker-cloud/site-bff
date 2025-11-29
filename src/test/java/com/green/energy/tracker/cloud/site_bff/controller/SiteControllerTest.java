@@ -1,6 +1,6 @@
 package com.green.energy.tracker.cloud.site_bff.controller;
 
-import com.green.energy.tracker.cloud.site_bff.service.v1.SiteService;
+import com.green.energy.tracker.cloud.site_bff.service.SiteService;
 import com.green.energy.tracker.cloud.sitebff.web.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,0 +1,34 @@
+substitutions:
+  _ARTIFACT_REGISTRY_REPO: "microservices-repo"
+  _IMAGE_NAME: "site-bff"
+  _LOCATION: "us-east1"
+
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+  volumes:
+    - name: 'maven-cache'
+      path: '/root/.m2'
+
+steps:
+  - id: "Unit Test"
+    name: "name: 'gcr.io/cloud-builders/mvn'"
+    args: [ 'clean', 'test' ]
+
+  - id: "Start Dependencies for Integration Test"
+    name: "docker/compose:1.29.2"
+    args: [ 'up', '-d' ]
+    waitFor:
+      - "Unit Test"
+
+  - id: "Integration Test"
+    name: "gcr.io/cloud-builders/mvn"
+    args: [ 'clean', 'verify' ]
+    volumes:
+      - name: 'maven-cache'
+        path: '/root/.m2'
+    waitFor:
+      - "Start Dependencies for Integration Test"
+
+  - id: "Stop Dependencies"
+    name: "docker/compose:1.29.2"
+    args: [ 'down' ]

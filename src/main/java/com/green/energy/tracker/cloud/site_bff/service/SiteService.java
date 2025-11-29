@@ -1,4 +1,4 @@
-package com.green.energy.tracker.cloud.site_bff.service.v1;
+package com.green.energy.tracker.cloud.site_bff.service;
 
 import com.green.energy.tracker.cloud.sitebff.web.model.AsyncOperationResponseDto;
 import com.green.energy.tracker.cloud.sitebff.web.model.ListSitesResponseDto;

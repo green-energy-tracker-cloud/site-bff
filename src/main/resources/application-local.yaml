@@ -29,7 +29,37 @@ spring:
           enabled: true
         host-port: localhost:8695
 
-retry:
-  max-attempts: 3
-  min-backoff-millis: 100
-  max-backoff-millis: 1000
+resilience4j:
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.data.redis.RedisConnectionFailureException
+        ignoreExceptions:
+          - org.springframework.web.server.ResponseStatusException
+    instances:
+      firestore:
+        baseConfig: default
+      pubsub:
+        baseConfig: default
+      cache:
+        baseConfig: default
+        maxAttempts: 2
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+    instances:
+      firestore:
+        baseConfig: default
+      pubsub:
+        baseConfig: default
