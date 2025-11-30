@@ -68,3 +68,24 @@ steps:
       '-Dimage=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA',
       '-DskipTests'
     ]
+
+  - id: "Check Vulnerabilities"
+    name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        IMAGE_URI="$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA"
+        echo "Waiting for scan on: $IMAGE_URI"
+        sleep 30
+        echo "Checking for CRITICAL vulnerabilities..."
+        gcloud artifacts docker images list-vulnerabilities $IMAGE_URI \
+          --filter='vulnerability.effectiveSeverity=CRITICAL' \
+          --format='value(vulnerability.packageIssue[0].affectedLocation.package, vulnerability.shortDescription)' > critical_vulns.txt
+        if [ -s critical_vulns.txt ]; then
+          echo "❌ BUILD FAILED: Critical vulnerabilities found."
+          cat critical_vulns.txt
+          exit 1
+        else
+          echo "✅ SECURITY CHECK PASSED"
+        fi
