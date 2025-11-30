@@ -38,7 +38,6 @@ import static org.mockito.Mockito.when;
 class SiteServiceIntegrationTest extends IntegrationTestBase {
 
     @Autowired
-    @Qualifier("SiteServiceV1")
     private SiteService siteService;
 
     @Autowired
