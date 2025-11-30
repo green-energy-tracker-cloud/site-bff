@@ -37,6 +37,16 @@ steps:
     args: [ '-f', 'docker-compose.yml', '-f', 'docker-compose.ci.yml', 'up', '-d' ]
     waitFor:
       - "Create CI Override"
+      -
+  - id: "Wait for Firestore"
+    name: 'ubuntu'
+    args: [ 'sleep', '15' ]
+    waitFor: [ "Start Dependencies for Integration Test" ]
+
+  - id: "Debug Docker"
+    name: 'gcr.io/cloud-builders/docker'  # <--- USA QUESTA IMMAGINE
+    args: ['ps', '-a']
+    waitFor: ['Wait for Firestore']
 
   - id: "Integration Test"
     name: 'maven:3.9-eclipse-temurin-21'
@@ -45,7 +55,7 @@ steps:
       - 'PUBSUB_EMULATOR_HOST=localhost:8085'
     args: [ 'mvn', 'verify' ]
     waitFor:
-      - "Start Dependencies for Integration Test"
+      - "Debug Docker"
 
   - id: "Stop Dependencies"
     name: 'docker/compose:1.29.2'
