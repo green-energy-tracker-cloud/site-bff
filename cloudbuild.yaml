@@ -13,6 +13,9 @@ steps:
   - id: "Unit Test"
     name: 'maven:3.9-eclipse-temurin-21'
     args: [ 'mvn', 'clean', 'test' ]
+    volumes:
+      - name: 'maven-cache'
+        path: '/root/.m2'
 
   - id: "Start Firestore"
     name: 'gcr.io/cloud-builders/docker'
@@ -51,6 +54,9 @@ steps:
       - 'SPRING_DATA_REDIS_HOST=redis'
       - 'SPRING_DATA_REDIS_PORT=6379'
     args: [ 'mvn', 'verify', '-Dspring.profiles.active=local' ]
+    volumes:
+      - name: 'maven-cache'
+        path: '/root/.m2'
     waitFor:
       - "Wait for Services"
 
@@ -60,3 +66,14 @@ steps:
     args:
       - '-c'
       - 'docker stop firestore pubsub redis || true'
+
+  - id: "Push to Artifact Registry"
+    name: 'gcr.io/cloud-builders/mvn'
+    args: [
+      'com.google.cloud.tools:jib-maven-plugin:3.4.5:build',
+      '-Dimage=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA',
+      '-DskipTests'
+    ]
+    volumes:
+      - name: 'maven-cache'
+        path: '/root/.m2'
