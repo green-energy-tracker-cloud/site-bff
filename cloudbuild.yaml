@@ -95,7 +95,7 @@ steps:
       - |
         IMAGE_URI="$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA"
         for i in {1..30}; do
-          if gcloud artifacts docker images list-vulnerabilities $$IMAGE_URI --format="value(vulnerability.effectiveSeverity)" > /dev/null 2>&1; then
+          if gcloud artifacts docker images list-vulnerabilities $$IMAGE_URI --location=$_LOCATION --format="value(vulnerability.effectiveSeverity)" > /dev/null 2>&1; then
              echo "Scan results found."
              break
           fi
