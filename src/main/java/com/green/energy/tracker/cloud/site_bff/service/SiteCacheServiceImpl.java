@@ -40,10 +40,8 @@ public class SiteCacheServiceImpl implements SiteCacheService {
         this.siteListRedisTemplate = siteListRedisTemplate;
         this.retryCache = retryCache;
 
-        this.retryCache.getEventPublisher().onRetry(event -> {
-            log.warn("Retrying Cache. Attempt #{} due to: {}",
-                    event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : "");
-        });
+        this.retryCache.getEventPublisher().onRetry(event -> log.warn("Retrying Cache. Attempt #{} due to: {}",
+                event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : ""));
     }
 
     @Override

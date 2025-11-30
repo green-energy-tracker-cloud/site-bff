@@ -28,7 +28,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-@Service("SiteServiceV1")
+@Service
 @Slf4j
 public class SiteServiceImpl implements SiteService {
     @Value("${spring.cloud.gcp.pubsub.topic.site-events}")
@@ -37,6 +37,9 @@ public class SiteServiceImpl implements SiteService {
     private int defaultPage;
     @Value("${pagination.default.size:10}")
     private int defaultPageSize;
+
+    private final static String CB_FIRESTORE_ID = "firestore";
+    private final static String CB_PUBSUB_ID = "pubsub";
 
     private final PubSubPublisherTemplate publisherTemplate;
     private final SiteMapper siteMapper;
@@ -64,15 +67,11 @@ public class SiteServiceImpl implements SiteService {
         this.retryPubSub = retryPubSub;
         this.retryFirestore = retryFirestore;
 
-        this.retryPubSub.getEventPublisher().onRetry(event -> {
-            log.warn("Retrying PubSub. Attempt #{} due to: {}",
-                    event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : "");
-        });
+        this.retryPubSub.getEventPublisher().onRetry(event -> log.warn("Retrying PubSub. Attempt #{} due to: {}",
+                event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : ""));
 
-        this.retryFirestore.getEventPublisher().onRetry(event -> {
-            log.warn("Retrying Firestore. Attempt #{} due to: {}",
-                    event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : "");
-        });
+        this.retryFirestore.getEventPublisher().onRetry(event -> log.warn("Retrying Firestore. Attempt #{} due to: {}",
+                event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : ""));
     }
 
     @Override
@@ -148,7 +147,7 @@ public class SiteServiceImpl implements SiteService {
 
         return Mono.fromFuture(publisherTemplate.publish(siteEventsTopic, messageBuilder.build()))
                 .transformDeferred(RetryOperator.of(retryPubSub))
-                .transformDeferred(mono -> fallbackCircuitBreaker(mono, cbPubSub, "pubsub", eventType.name()))
+                .transformDeferred(mono -> fallbackCircuitBreaker(mono, cbPubSub, CB_PUBSUB_ID, eventType.name()))
                 .map(messageId -> createAsyncOperationResponseDto(messageId, id));
     }
 
@@ -164,7 +163,7 @@ public class SiteServiceImpl implements SiteService {
         return siteRepository
                 .findById(id.toString())
                 .transformDeferred(RetryOperator.of(retryFirestore))
-                .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, "firestore", "findById"))
+                .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, CB_FIRESTORE_ID, "findById"))
                 .map(siteMapper::toDto)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Site with id %s not found", id))));
     }
@@ -173,11 +172,11 @@ public class SiteServiceImpl implements SiteService {
         var pageable = PageRequest.of(page, size);
         var countByUserId = siteRepository.countByUserId(userId.toString())
                 .transformDeferred(RetryOperator.of(retryFirestore))
-                .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, "firestore", "countByUserId"));
+                .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, CB_FIRESTORE_ID, "countByUserId"));
 
         var sitesList = siteRepository.findAllByUserId(userId.toString(), pageable)
                 .transformDeferred(RetryOperator.of(retryFirestore))
-                .transformDeferred(flux-> fallbackCircuitBreaker(flux, cbFirestore, "firestore", "findAllByUserId"))
+                .transformDeferred(flux-> fallbackCircuitBreaker(flux, cbFirestore, CB_FIRESTORE_ID, "findAllByUserId"))
                 .map(siteMapper::toDto)
                 .collectList();
 
