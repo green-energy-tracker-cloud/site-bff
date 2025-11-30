@@ -6,6 +6,12 @@ spring:
       repositories:
         enabled: false
 
+  cloud:
+    gcp:
+      pubsub:
+        topic:
+          site-events: site-events
+
 resilience4j:
   retry:
     configs:

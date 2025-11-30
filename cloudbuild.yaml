@@ -14,49 +14,49 @@ steps:
     name: 'maven:3.9-eclipse-temurin-21'
     args: [ 'mvn', 'clean', 'test' ]
 
-  - id: "Create CI Override"
-    name: 'bash'
-    script: |
-      cat <<EOF > docker-compose.ci.yml
-      version: '3.8'
-      services:
-        firestore:
-          network_mode: cloudbuild
-          ports: []
-        pubsub:
-          network_mode: cloudbuild
-          ports: []
-        redis:
-          network_mode: cloudbuild
-          ports: []
-      EOF
-    waitFor: ['Unit Test']
+  - id: "Start Firestore"
+    name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'run', '-d',
+      '--network=cloudbuild',
+      '--name=firestore',
+      'gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators',
+      'gcloud', 'emulators', 'firestore', 'start', '--project=local-project', '--host-port=0.0.0.0:8695'
+    ]
 
-  - id: "Start Dependencies for Integration Test"
-    name: 'docker/compose:1.29.2'
-    args: [ '-f', 'docker-compose.yml', '-f', 'docker-compose.ci.yml', 'up', '-d' ]
-    waitFor:
-      - "Create CI Override"
+  - id: "Start PubSub"
+    name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'run', '-d',
+      '--network=cloudbuild',
+      '--name=pubsub',
+      'gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators',
+      'gcloud', 'beta', 'emulators', 'pubsub', 'start', '--project=local-project', '--host-port=0.0.0.0:8085'
+    ]
 
-  - id: "Wait for Firestore"
+  - id: "Start Redis"
+    name: 'gcr.io/cloud-builders/docker'
+    args: [ 'run', '-d', '--network=cloudbuild', '--name=redis', 'redis:alpine' ]
+
+  - id: "Wait for Services"
     name: 'ubuntu'
     args: [ 'sleep', '15' ]
-    waitFor: [ "Start Dependencies for Integration Test" ]
-
-  - id: "Debug Docker"
-    name: 'gcr.io/cloud-builders/docker'  # <--- USA QUESTA IMMAGINE
-    args: ['ps', '-a']
-    waitFor: ['Wait for Firestore']
+    waitFor: [ "Start Firestore", "Start Redis", "Start PubSub" ]
 
   - id: "Integration Test"
     name: 'maven:3.9-eclipse-temurin-21'
     env:
-      - 'FIRESTORE_EMULATOR_HOST=localhost:8695'
-      - 'PUBSUB_EMULATOR_HOST=localhost:8085'
+      - 'FIRESTORE_EMULATOR_HOST=firestore:8695'
+      - 'PUBSUB_EMULATOR_HOST=pubsub:8085'
+      - 'SPRING_DATA_REDIS_HOST=redis'
+      - 'SPRING_DATA_REDIS_PORT=6379'
     args: [ 'mvn', 'verify' ]
     waitFor:
-      - "Debug Docker"
+      - "Wait for Services"
 
-  - id: "Stop Dependencies"
-    name: 'docker/compose:1.29.2'
-    args: [ 'down' ]
+  - id: "Cleanup"
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'docker stop firestore pubsub redis || true'
