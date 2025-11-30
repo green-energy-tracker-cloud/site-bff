@@ -19,11 +19,11 @@ steps:
     args: [ '-f', 'docker-compose.yml', '-f', 'docker-compose.ci.yml', 'up', '-d' ]
     waitFor:
       - "Unit Test"
-      -
+
   - id: "Wait for Firestore"
     name: 'gcr.io/cloud-builders/curl'
     args: [ 'sh', '-c', 'sleep 10' ]
-    waitFor: [ "Start Dependencies" ]
+    waitFor: [ "Start Dependencies for Integration Test" ]
 
   - id: "Integration Test"
     name: 'maven:3.9-eclipse-temurin-21'
