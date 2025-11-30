@@ -25,6 +25,12 @@ steps:
     args: [ 'sh', '-c', 'sleep 10' ]
     waitFor: [ "Start Dependencies for Integration Test" ]
 
+  # STEP DI DEBUG TEMPORANEO
+  - id: "Debug Docker"
+    name: 'docker'
+    args: ['ps', '-a'] # Vediamo se firestore è "Up" o "Exited"
+    waitFor: ['Wait for Firestore']
+
   - id: "Integration Test"
     name: 'maven:3.9-eclipse-temurin-21'
     env:
