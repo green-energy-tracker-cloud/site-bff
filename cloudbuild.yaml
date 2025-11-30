@@ -21,7 +21,7 @@ steps:
       - "Unit Test"
 
   - id: "Wait for Firestore"
-    name: 'gcr.io/cloud-builders/curl'
+    name: 'ubuntu'
     args: [ 'sh', '-c', 'sleep 10' ]
     waitFor: [ "Start Dependencies for Integration Test" ]
 
