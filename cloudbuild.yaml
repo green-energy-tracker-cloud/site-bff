@@ -25,10 +25,9 @@ steps:
     args: [ 'sh', '-c', 'sleep 10' ]
     waitFor: [ "Start Dependencies for Integration Test" ]
 
-  # STEP DI DEBUG TEMPORANEO
   - id: "Debug Docker"
-    name: 'docker'
-    args: ['ps', '-a'] # Vediamo se firestore è "Up" o "Exited"
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['ps', '-a']
     waitFor: ['Wait for Firestore']
 
   - id: "Integration Test"
@@ -38,7 +37,7 @@ steps:
       - 'PUBSUB_EMULATOR_HOST=localhost:8085'
     args: [ 'mvn', 'verify' ]
     waitFor:
-      - "Wait for Firestore"
+      - "Debug Docker"
 
   - id: "Stop Dependencies"
     name: 'docker/compose:1.29.2'
