@@ -1,8 +1,16 @@
 spring:
   application:
     name: site-bff
+  pagination:
+    default:
+      page: 0
+      size: 10
   data:
     redis:
+      prefix-key: site
+      ttl-seconds: 3600
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
       repositories:
         enabled: false
 

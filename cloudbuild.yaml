@@ -50,7 +50,7 @@ steps:
       - 'PUBSUB_EMULATOR_HOST=pubsub:8085'
       - 'SPRING_DATA_REDIS_HOST=redis'
       - 'SPRING_DATA_REDIS_PORT=6379'
-    args: [ 'mvn', 'verify' ]
+    args: [ 'mvn', 'verify', '-Dspring.profiles.active=local' ]
     waitFor:
       - "Wait for Services"
 

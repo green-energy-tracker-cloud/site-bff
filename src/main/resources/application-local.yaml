@@ -9,7 +9,7 @@ spring:
     redis:
       prefix-key: site
       ttl-seconds: 3600
-      host: localhost
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: 6379
       repositories:
         enabled: false
@@ -21,45 +21,10 @@ spring:
         credentials:
           enabled: false
       pubsub:
-        emulator-host: localhost:8085
+        emulator-host: ${PUBSUB_EMULATOR_HOST:localhost:8085}
         topic:
           site-events: site-events
       firestore:
         emulator:
           enabled: true
-        host-port: localhost:8695
-
-resilience4j:
-  retry:
-    configs:
-      default:
-        maxAttempts: 3
-        waitDuration: 500ms
-        retryExceptions:
-          - java.io.IOException
-          - java.util.concurrent.TimeoutException
-          - org.springframework.data.redis.RedisConnectionFailureException
-        ignoreExceptions:
-          - org.springframework.web.server.ResponseStatusException
-    instances:
-      firestore:
-        baseConfig: default
-      pubsub:
-        baseConfig: default
-      cache:
-        baseConfig: default
-        maxAttempts: 2
-  circuitbreaker:
-    configs:
-      default:
-        registerHealthIndicator: true
-        slidingWindowType: COUNT_BASED
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-        permittedNumberOfCallsInHalfOpenState: 3
-    instances:
-      firestore:
-        baseConfig: default
-      pubsub:
-        baseConfig: default
+        host-port: ${FIRESTORE_EMULATOR_HOST:localhost:8695}
