@@ -9,6 +9,11 @@ options:
     - name: 'maven-cache'
       path: '/root/.m2'
 
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/sonar-cloud-token/versions/latest
+      env: 'SONAR_CLOUD_TOKEN'
+
 steps:
   - id: "Unit Test"
     name: 'maven:3.9-eclipse-temurin-21'
@@ -60,6 +65,19 @@ steps:
     args:
       - '-c'
       - 'docker stop firestore pubsub redis || true'
+
+  - id: "Load on Sonar Cloud"
+    name: 'maven:3.9.4-eclipse-temurin-17'
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        mvn sonar:sonar \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.organization=green-energy-tracker-cloud \
+          -Dsonar.projectKey=$PROJECT_ID \
+          -Dsonar.login=$$SONAR_CLOUD_TOKEN
+    secretEnv: ['SONAR_CLOUD_TOKEN']
 
   - id: "Push to Artifact Registry"
     name: 'gcr.io/cloud-builders/mvn'
