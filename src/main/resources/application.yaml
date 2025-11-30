@@ -10,10 +10,9 @@ spring:
       prefix-key: site
       ttl-seconds: 3600
       host: ${SPRING_DATA_REDIS_HOST}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
+      port: ${SPRING_DATA_REDIS_PORT}
       repositories:
         enabled: false
-
   cloud:
     gcp:
       pubsub:
