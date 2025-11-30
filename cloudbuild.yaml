@@ -76,16 +76,18 @@ steps:
       - '-c'
       - |
         IMAGE_URI="$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA"
-        echo "Waiting for scan on: $$IMAGE_URI"
-        sleep 30
-        echo "Checking for CRITICAL vulnerabilities..."
-        gcloud artifacts docker images list-vulnerabilities $$IMAGE_URI \
-          --filter='vulnerability.effectiveSeverity=CRITICAL' \
-          --format='value(vulnerability.packageIssue[0].affectedLocation.package, vulnerability.shortDescription)' > critical_vulns.txt
-        if [ -s critical_vulns.txt ]; then
-          echo "❌ BUILD FAILED: Critical vulnerabilities found."
-          cat critical_vulns.txt
+        for i in {1..30}; do
+          if gcloud artifacts docker images list-vulnerabilities $$IMAGE_URI --format="value(vulnerability.effectiveSeverity)" > /dev/null 2>&1; then
+             echo "Scan results found."
+             break
+          fi
+          echo "Waiting for scan results... ($$i/30)"
+          sleep 10
+        done
+        gcloud artifacts docker images list-vulnerabilities $$IMAGE_URI --format="value(vulnerability.effectiveSeverity)" > scan_results.txt
+        if grep -q "CRITICAL" scan_results.txt; then
+          echo "❌ BUILD FAILED: Found critical vulnerabilities!"
           exit 1
         else
-          echo "✅ SECURITY CHECK PASSED"
+          echo "✅ SECURITY CHECK PASSED: No critical vulnerabilities"
         fi
