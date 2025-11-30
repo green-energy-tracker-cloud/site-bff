@@ -16,7 +16,7 @@ steps:
 
   - id: "Start Dependencies for Integration Test"
     name: 'docker/compose:1.29.2'
-    args: [ 'up', '-d' ]
+    args: [ '-f', 'docker-compose.yml', '-f', 'docker-compose.ci.yml', 'up', '-d' ]
     waitFor:
       - "Unit Test"
 

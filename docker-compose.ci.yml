@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  firestore:
+    network_mode: cloudbuild
+
+  pubsub:
+    network_mode: cloudbuild
+
+  redis:
+    network_mode: cloudbuild
