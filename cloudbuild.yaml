@@ -93,41 +93,34 @@ steps:
     args:
       - '-c'
       - |
-        IMAGE_URI="https://$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA"
-          
+        IMAGE_URI = $_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME
         for i in {1..30}; do
-          
           STATUS=$(gcloud artifacts docker images list \
-            --location=$_LOCATION \
-            --show-occurrences \
-            --occurrence-filter="resource_url=\"$$IMAGE_URI\" AND kind=\"DISCOVERY\"" \
-            --format="value(discovery.analysisStatus)" 2>/dev/null)
-          
-           
+                    $$IMAGE_URI \
+                    --sort-by="~createTime" \
+                    --limit=1 \
+                    --show-occurrences \
+                    --format="json" \
+                    | grep "analysisStatus" \
+                    | awk -F'"' '{print $4}')
           if [[ "$$STATUS" == "FINISHED_SUCCESS" ]]; then
-              echo "Scan completed. Analyzing results..."
-            
-              gcloud artifacts docker images list-vulnerabilities $$IMAGE_URI \
-              --location=$_LOCATION \
-              --filter="vulnerability.effectiveSeverity=CRITICAL" \
-              --format="value(vulnerability.packageIssue[0].affectedLocation.package, vulnerability.shortDescription)" > criticals.txt
-            
-              if [ -s criticals.txt ]; then
-                  echo "BUILD FAILED: Critical vulnerabilities found!"
-                  cat criticals.txt
+              $CRITICAL_COUNT=$(gcloud artifacts docker images list \
+                                $$IMAGE_URI \
+                                --sort-by="~createTime" \
+                                --limit=1 \
+                                --show-occurrences \
+                                --format="json" \
+                                | jq -r '.[0].vuln_counts.CRITICAL // 0')
+              if [[ "$$CRITICAL_COUNT" -gt 0 ]]; then
+                  echo "❌ ERRORE: Trovate $CRITICAL_COUNT vulnerabilità CRITICAL. Blocco il processo."
                   exit 1
               else
-                  echo "SECURITY CHECK PASSED: No critical vulnerabilities found."
+                  echo "✅ Nessuna vulnerabilità CRITICAL trovata. Procedo..."
                   exit 0
               fi
-          elif [[ "$$STATUS" == "FINISHED_FAILED" ]]; then
-              echo "ERROR: Vulnerability scan failed (Image format not supported or internal error)."
-              exit 1
           fi
-          
-          echo "⏳ Scan status: [$$STATUS]... ($$i/30)"
+          echo "Stato attuale: $STATUS. Attendo 10 secondi..."
           sleep 10
         done
-        
         echo "TIMEOUT: Scan did not complete within the time limit."
         exit 1
