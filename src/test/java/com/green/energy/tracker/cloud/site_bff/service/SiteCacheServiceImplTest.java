@@ -98,7 +98,7 @@ class SiteCacheServiceImplTest {
         SiteResponseDto dbSite = createSiteResponseDto(siteId);
 
         when(siteValueOps.get(cacheKey)).thenReturn(Mono.empty());
-        when(siteValueOps.set(eq(cacheKey), eq(dbSite), eq(Duration.ofSeconds(CACHE_TTL_SECONDS))))
+        when(siteValueOps.set(cacheKey, dbSite, Duration.ofSeconds(CACHE_TTL_SECONDS)))
                 .thenReturn(Mono.just(true));
 
         Supplier<Mono<SiteResponseDto>> dbFallback = () -> Mono.just(dbSite);
@@ -112,7 +112,7 @@ class SiteCacheServiceImplTest {
                 .verifyComplete();
 
         verify(siteValueOps).get(cacheKey);
-        verify(siteValueOps).set(eq(cacheKey), eq(dbSite), eq(Duration.ofSeconds(CACHE_TTL_SECONDS)));
+        verify(siteValueOps).set(cacheKey, dbSite, Duration.ofSeconds(CACHE_TTL_SECONDS));
     }
 
     @Test
@@ -145,7 +145,7 @@ class SiteCacheServiceImplTest {
         SiteResponseDto dbSite = createSiteResponseDto(siteId);
 
         when(siteValueOps.get(cacheKey)).thenReturn(Mono.empty());
-        when(siteValueOps.set(eq(cacheKey), eq(dbSite), eq(Duration.ofSeconds(CACHE_TTL_SECONDS))))
+        when(siteValueOps.set(cacheKey, dbSite, Duration.ofSeconds(CACHE_TTL_SECONDS)))
                 .thenReturn(Mono.error(new RedisConnectionFailureException("Cannot set cache")));
 
         Supplier<Mono<SiteResponseDto>> dbFallback = () -> Mono.just(dbSite);
@@ -159,7 +159,7 @@ class SiteCacheServiceImplTest {
                 .verifyComplete();
 
         verify(siteValueOps).get(cacheKey);
-        verify(siteValueOps, atLeastOnce()).set(eq(cacheKey), eq(dbSite), eq(Duration.ofSeconds(CACHE_TTL_SECONDS)));
+        verify(siteValueOps, atLeastOnce()).set(cacheKey, dbSite, Duration.ofSeconds(CACHE_TTL_SECONDS));
     }
 
     @Test
@@ -197,7 +197,7 @@ class SiteCacheServiceImplTest {
         ListSitesResponseDto dbList = createListSitesResponseDto();
 
         when(siteListValueOps.get(cacheKey)).thenReturn(Mono.empty());
-        when(siteListValueOps.set(eq(cacheKey), eq(dbList), eq(Duration.ofSeconds(CACHE_TTL_SECONDS))))
+        when(siteListValueOps.set(cacheKey, dbList, Duration.ofSeconds(CACHE_TTL_SECONDS)))
                 .thenReturn(Mono.just(true));
 
         Supplier<Mono<ListSitesResponseDto>> dbFallback = () -> Mono.just(dbList);
@@ -211,7 +211,7 @@ class SiteCacheServiceImplTest {
                 .verifyComplete();
 
         verify(siteListValueOps).get(cacheKey);
-        verify(siteListValueOps).set(eq(cacheKey), eq(dbList), eq(Duration.ofSeconds(CACHE_TTL_SECONDS)));
+        verify(siteListValueOps).set(cacheKey, dbList, Duration.ofSeconds(CACHE_TTL_SECONDS));
     }
 
     @Test
@@ -224,7 +224,7 @@ class SiteCacheServiceImplTest {
         ListSitesResponseDto dbList = createListSitesResponseDto();
 
         when(siteListValueOps.get(cacheKey)).thenReturn(Mono.empty());
-        when(siteListValueOps.set(eq(cacheKey), eq(dbList), eq(Duration.ofSeconds(CACHE_TTL_SECONDS))))
+        when(siteListValueOps.set(cacheKey, dbList, Duration.ofSeconds(CACHE_TTL_SECONDS)))
                 .thenReturn(Mono.just(true));
 
         Supplier<Mono<ListSitesResponseDto>> dbFallback = () -> Mono.just(dbList);
@@ -250,7 +250,7 @@ class SiteCacheServiceImplTest {
         ListSitesResponseDto dbList = createListSitesResponseDto();
 
         when(siteListValueOps.get(cacheKey)).thenReturn(Mono.empty());
-        when(siteListValueOps.set(eq(cacheKey), eq(dbList), eq(Duration.ofSeconds(CACHE_TTL_SECONDS))))
+        when(siteListValueOps.set(cacheKey, dbList, Duration.ofSeconds(CACHE_TTL_SECONDS)))
                 .thenReturn(Mono.just(true));
 
         Supplier<Mono<ListSitesResponseDto>> dbFallback = () -> Mono.just(dbList);
@@ -276,7 +276,7 @@ class SiteCacheServiceImplTest {
         ListSitesResponseDto dbList = createListSitesResponseDto();
 
         when(siteListValueOps.get(cacheKey)).thenReturn(Mono.empty());
-        when(siteListValueOps.set(eq(cacheKey), eq(dbList), eq(Duration.ofSeconds(CACHE_TTL_SECONDS))))
+        when(siteListValueOps.set(cacheKey, dbList, Duration.ofSeconds(CACHE_TTL_SECONDS)))
                 .thenReturn(Mono.just(true));
 
         Supplier<Mono<ListSitesResponseDto>> dbFallback = () -> Mono.just(dbList);
@@ -302,7 +302,7 @@ class SiteCacheServiceImplTest {
         ListSitesResponseDto dbList = createListSitesResponseDto();
 
         when(siteListValueOps.get(cacheKey)).thenReturn(Mono.empty());
-        when(siteListValueOps.set(eq(cacheKey), eq(dbList), eq(Duration.ofSeconds(CACHE_TTL_SECONDS))))
+        when(siteListValueOps.set(cacheKey, dbList, Duration.ofSeconds(CACHE_TTL_SECONDS)))
                 .thenReturn(Mono.just(true));
 
         Supplier<Mono<ListSitesResponseDto>> dbFallback = () -> Mono.just(dbList);
@@ -352,7 +352,7 @@ class SiteCacheServiceImplTest {
         ListSitesResponseDto dbList = createListSitesResponseDto();
 
         when(siteListValueOps.get(cacheKey)).thenReturn(Mono.empty());
-        when(siteListValueOps.set(eq(cacheKey), eq(dbList), eq(Duration.ofSeconds(CACHE_TTL_SECONDS))))
+        when(siteListValueOps.set(cacheKey, dbList, Duration.ofSeconds(CACHE_TTL_SECONDS)))
                 .thenReturn(Mono.error(new RedisConnectionFailureException("Cannot set cache")));
 
         Supplier<Mono<ListSitesResponseDto>> dbFallback = () -> Mono.just(dbList);
@@ -366,7 +366,7 @@ class SiteCacheServiceImplTest {
                 .verifyComplete();
 
         verify(siteListValueOps).get(cacheKey);
-        verify(siteListValueOps, atLeastOnce()).set(eq(cacheKey), eq(dbList), eq(Duration.ofSeconds(CACHE_TTL_SECONDS)));
+        verify(siteListValueOps, atLeastOnce()).set(cacheKey, dbList, Duration.ofSeconds(CACHE_TTL_SECONDS));
     }
 
     // Helper methods
