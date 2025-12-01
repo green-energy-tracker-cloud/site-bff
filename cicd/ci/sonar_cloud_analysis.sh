@@ -26,7 +26,7 @@ mvn sonar:sonar \
   -Dsonar.host.url=https://sonarcloud.io \
   -Dsonar.organization=green-energy-tracker-cloud \
   -Dsonar.projectKey="$PROJECT_ID" \
-  -Dsonar.login="$SONAR_CLOUD_TOKEN"
+  -Dsonar.login="$SONAR_CLOUD_TOKEN" \
   -Dsonar.qualitygate.wait=true
 
 echo "Sonar Cloud analysis completed successfully."
