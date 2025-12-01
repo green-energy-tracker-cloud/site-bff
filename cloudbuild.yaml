@@ -112,14 +112,14 @@ steps:
                                 --format="json" \
                                 | jq -r '.[0].vuln_counts.CRITICAL // 0')
               if [[ "$$CRITICAL_COUNT" -gt 0 ]]; then
-                  echo "❌ ERRORE: Trovate $CRITICAL_COUNT vulnerabilità CRITICAL. Blocco il processo."
+                  echo "❌ ERRORE: Trovate $$CRITICAL_COUNT vulnerabilità CRITICAL. Blocco il processo."
                   exit 1
               else
                   echo "✅ Nessuna vulnerabilità CRITICAL trovata. Procedo..."
                   exit 0
               fi
           fi
-          echo "Stato attuale: $STATUS. Attendo 10 secondi..."
+          echo "Stato attuale: $$STATUS. Attendo 10 secondi..."
           sleep 10
         done
         echo "TIMEOUT: Scan did not complete within the time limit."
