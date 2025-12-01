@@ -110,7 +110,7 @@ steps:
                                 --limit=1 \
                                 --show-occurrences \
                                 --format="json" \
-                                | grep "\"CRITICAL\":")
+                                | grep "\"HIGH\":")
               if [[ "$$CRITICAL_COUNT" -gt 0 ]]; then
                   echo "❌ ERRORE: Trovate $$CRITICAL_COUNT vulnerabilità CRITICAL. Blocco il processo."
                   exit 1
