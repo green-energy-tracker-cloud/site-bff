@@ -240,7 +240,7 @@ class SiteRepositoryIntegrationTest extends IntegrationTestBase {
 
         // Assert
         StepVerifier.create(result)
-                .assertNext(count -> assertThat(count).isEqualTo(0))
+                .assertNext(count -> assertThat(count).isZero())
                 .verifyComplete();
     }
 

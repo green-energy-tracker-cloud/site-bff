@@ -38,8 +38,8 @@ public class SiteServiceImpl implements SiteService {
     @Value("${pagination.default.size:10}")
     private int defaultPageSize;
 
-    private final static String CB_FIRESTORE_ID = "firestore";
-    private final static String CB_PUBSUB_ID = "pubsub";
+    private static final String CB_FIRESTORE_ID = "firestore";
+    private static final String CB_PUBSUB_ID = "pubsub";
 
     private final PubSubPublisherTemplate publisherTemplate;
     private final SiteMapper siteMapper;

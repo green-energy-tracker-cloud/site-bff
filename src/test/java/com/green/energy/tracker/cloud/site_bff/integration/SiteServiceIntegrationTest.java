@@ -15,7 +15,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.web.server.ResponseStatusException;
@@ -151,7 +150,7 @@ class SiteServiceIntegrationTest extends IntegrationTestBase {
         siteRepository.save(testSite).block();
 
         // Act: First call - should fetch from DB and cache
-        SiteResponseDto firstCall = siteService.get(testSiteId).block();
+        siteService.get(testSiteId).block();
 
         // Delete from repository to verify cache is used
         siteRepository.deleteById(testSiteId.toString()).block();
@@ -224,7 +223,7 @@ class SiteServiceIntegrationTest extends IntegrationTestBase {
         siteRepository.save(site1).block();
 
         // Act: First call - should fetch from DB and cache
-        ListSitesResponseDto firstCall = siteService.getAllByUserId(testUserId, 0, 10).block();
+        siteService.getAllByUserId(testUserId, 0, 10).block();
 
         // Delete from repository to verify cache is used
         siteRepository.deleteAll().block();

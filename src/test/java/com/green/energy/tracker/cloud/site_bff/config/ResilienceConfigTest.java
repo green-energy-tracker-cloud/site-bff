@@ -42,8 +42,7 @@ class ResilienceConfigTest {
 
         ReactiveCircuitBreaker result = resilienceConfig.circuitBreakerPubSub();
 
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(mockCircuitBreaker);
+        assertThat(result).isNotNull().isEqualTo(mockCircuitBreaker);
         verify(circuitBreakerFactory).create("pubsub");
     }
 
@@ -53,8 +52,7 @@ class ResilienceConfigTest {
 
         ReactiveCircuitBreaker result = resilienceConfig.circuitBreakerFirestore();
 
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(mockCircuitBreaker);
+        assertThat(result).isNotNull().isEqualTo(mockCircuitBreaker);
         verify(circuitBreakerFactory).create("firestore");
     }
 
@@ -64,8 +62,7 @@ class ResilienceConfigTest {
 
         Retry result = resilienceConfig.retryPubSub();
 
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(mockRetry);
+        assertThat(result).isNotNull().isEqualTo(mockRetry);
         verify(retryRegistry).retry("pubsub");
     }
 
@@ -75,8 +72,7 @@ class ResilienceConfigTest {
 
         Retry result = resilienceConfig.retryFirestore();
 
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(mockRetry);
+        assertThat(result).isNotNull().isEqualTo(mockRetry);
         verify(retryRegistry).retry("firestore");
     }
 
@@ -86,8 +82,7 @@ class ResilienceConfigTest {
 
         Retry result = resilienceConfig.retryCache();
 
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(mockRetry);
+        assertThat(result).isNotNull().isEqualTo(mockRetry);
         verify(retryRegistry).retry("cache");
     }
 
