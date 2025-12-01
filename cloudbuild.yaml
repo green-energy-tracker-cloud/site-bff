@@ -69,7 +69,7 @@ steps:
   - id: "Load on Sonar Cloud"
     name: 'maven:3.9.4-eclipse-temurin-17'
     entrypoint: 'bash'
-    args: [ 'cicd/ci/sonar_analysis.sh' ]
+    args: [ 'cicd/ci/sonar_cloud_analysis.sh' ]
     env:
       - 'PROJECT_ID=$PROJECT_ID'
     secretEnv: [ 'SONAR_CLOUD_TOKEN' ]
