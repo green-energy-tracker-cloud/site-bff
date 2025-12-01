@@ -103,5 +103,5 @@ steps:
       - 'rel-$COMMIT_SHA'
       - '--delivery-pipeline=pipeline'
       - '--region=us-east1'
-      - '--source=.'
-      - '--images=my-app=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA'
+      - '--source=./cicd/cd/'
+      - '--images=site-bff=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA'
