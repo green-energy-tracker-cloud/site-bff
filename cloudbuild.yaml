@@ -111,6 +111,15 @@ steps:
                                 --show-occurrences \
                                 --format="json" \
                                 | grep "\"HIGH\":")
+        
+              if [[ -z "$$CRITICAL_LINE" ]]; then
+                  CRITICAL_COUNT=0
+              else
+                  CRITICAL_COUNT=$(echo "$$CRITICAL_LINE" | awk -F':' '{print $2}' | tr -dc '0-9')
+              fi
+
+              echo "Vulnerabilità CRITICAL trovate: $$CRITICAL_COUNT"
+        
               if [[ "$$CRITICAL_COUNT" -gt 0 ]]; then
                   echo "❌ ERRORE: Trovate $$CRITICAL_COUNT vulnerabilità CRITICAL. Blocco il processo."
                   exit 1
