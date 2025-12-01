@@ -92,3 +92,16 @@ steps:
       - 'ARTIFACT_REGISTRY_REPO=$_ARTIFACT_REGISTRY_REPO'
       - 'IMAGE_NAME=$_IMAGE_NAME'
       - 'COMMIT_SHA=$COMMIT_SHA'
+
+  - id: "Create Release"
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'deploy'
+      - 'releases'
+      - 'create'
+      - 'rel-$COMMIT_SHA'
+      - '--delivery-pipeline=pipeline'
+      - '--region=us-east1'
+      - '--source=.'
+      - '--images=my-app=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:$COMMIT_SHA'
