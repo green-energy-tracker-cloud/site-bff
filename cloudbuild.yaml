@@ -100,14 +100,17 @@ steps:
                     --sort-by="~createTime" \
                     --limit=1 \
                     --show-occurrences \
-                    --format="value(discovery.analysisStatus)")
+                    --format="json" \
+                    | grep "analysisStatus" \
+                    | awk -F'"' '{print $4}')
           if [[ "$$STATUS" == "FINISHED_SUCCESS" ]]; then
               CRITICAL_COUNT=$(gcloud artifacts docker images list \
                                 $$IMAGE_URI \
                                 --sort-by="~createTime" \
                                 --limit=1 \
                                 --show-occurrences \
-                                --format="value(vuln_counts.CRITICAL)")
+                                --format="json" \
+                                | grep "\"CRITICAL\":")
               if [[ "$$CRITICAL_COUNT" -gt 0 ]]; then
                   echo "❌ ERRORE: Trovate $$CRITICAL_COUNT vulnerabilità CRITICAL. Blocco il processo."
                   exit 1
