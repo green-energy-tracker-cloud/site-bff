@@ -69,15 +69,10 @@ steps:
   - id: "Load on Sonar Cloud"
     name: 'maven:3.9.4-eclipse-temurin-17'
     entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        mvn sonar:sonar \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.organization=green-energy-tracker-cloud \
-          -Dsonar.projectKey=$PROJECT_ID \
-          -Dsonar.login=$$SONAR_CLOUD_TOKEN
-    secretEnv: ['SONAR_CLOUD_TOKEN']
+    args: [ 'cicd/ci/sonar_analysis.sh' ]
+    env:
+      - 'PROJECT_ID=$PROJECT_ID'
+    secretEnv: [ 'SONAR_CLOUD_TOKEN' ]
 
   - id: "Push to Artifact Registry"
     name: 'gcr.io/cloud-builders/mvn'
