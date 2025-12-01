@@ -104,7 +104,7 @@ steps:
                     | grep "analysisStatus" \
                     | awk -F'"' '{print $4}')
           if [[ "$$STATUS" == "FINISHED_SUCCESS" ]]; then
-              $CRITICAL_COUNT=$(gcloud artifacts docker images list \
+              CRITICAL_COUNT=$(gcloud artifacts docker images list \
                                 $$IMAGE_URI \
                                 --sort-by="~createTime" \
                                 --limit=1 \
