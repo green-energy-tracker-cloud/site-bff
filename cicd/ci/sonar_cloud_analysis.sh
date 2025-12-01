@@ -20,11 +20,13 @@ fi
 
 echo "Starting Sonar analysis for project: $PROJECT_ID"
 echo "Organization: green-energy-tracker-cloud"
+echo "Analysis is running... waiting for Quality Gate result..."
 
 mvn sonar:sonar \
   -Dsonar.host.url=https://sonarcloud.io \
   -Dsonar.organization=green-energy-tracker-cloud \
   -Dsonar.projectKey="$PROJECT_ID" \
   -Dsonar.login="$SONAR_CLOUD_TOKEN"
+  -Dsonar.qualitygate.wait=true
 
 echo "Sonar Cloud analysis completed successfully."
