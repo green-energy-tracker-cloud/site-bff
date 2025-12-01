@@ -93,7 +93,7 @@ steps:
     args:
       - '-c'
       - |
-        IMAGE_URI = $_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME
+        IMAGE_URI=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME
         for i in {1..30}; do
           STATUS=$(gcloud artifacts docker images list \
                     $$IMAGE_URI \
