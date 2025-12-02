@@ -10,7 +10,7 @@ spec:
   template:
     spec:
       containers:
-        - image: site-bff
+        - image: service-site-bff
           resources:
             limits:
               cpu: 1000m
