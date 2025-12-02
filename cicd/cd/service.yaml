@@ -1,14 +1,16 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: site-bff-service
+  name: service-site-bff
+  labels:
+    managed-by: google-cloud-deploy
+  annotations:
+    run.googleapis.com/ingress: all
 spec:
   template:
     spec:
       containers:
         - image: site-bff
-          ports:
-            - containerPort: 8080
           resources:
             limits:
               cpu: 1000m
