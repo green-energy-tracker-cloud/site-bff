@@ -104,5 +104,5 @@ steps:
       - '--delivery-pipeline=pipeline'
       - '--region=us-east1'
       - '--source=./cicd/cd/'
+      - '--gcs-source-staging-dir=gs://deploy-artifacts-deploy-artifacts-green-energy-tracker-cloud/source'
       - '--images=site-bff=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:${COMMIT_SHA}'
-      - '--gcs-source-staging-dir=gs://3d4fea78bea24d54ad53fa1f8df0000e_clouddeploy/source'
