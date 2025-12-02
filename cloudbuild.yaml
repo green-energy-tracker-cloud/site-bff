@@ -104,4 +104,4 @@ steps:
       - '--delivery-pipeline=pipeline'
       - '--region=us-east1'
       - '--source=./cicd/cd/'
-      - '--images=service-site-bff=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:${COMMIT_SHA}'
+      - '--images=site-bff=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:${COMMIT_SHA}'

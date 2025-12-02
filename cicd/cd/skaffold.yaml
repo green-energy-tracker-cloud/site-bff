@@ -1,7 +1,7 @@
 apiVersion: skaffold/v4beta1
 kind: Config
 metadata:
-  name: site-bff-release
+  name: site-bff
 manifests:
   rawYaml:
     - service.yaml
