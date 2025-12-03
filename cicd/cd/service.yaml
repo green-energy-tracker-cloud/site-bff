@@ -9,13 +9,6 @@ spec:
         - image: site-bff
           ports:
             - containerPort: 8080
-          startupProbe:
-            initialDelaySeconds: 5
-            timeoutSeconds: 240
-            periodSeconds: 10
-            failureThreshold: 3
-            tcpSocket:
-              port: 8080
           resources:
             limits:
               cpu: 1000m
