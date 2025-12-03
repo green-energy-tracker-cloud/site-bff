@@ -1,9 +1,19 @@
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
   name: site-bff
+build:
+  artifacts:
+    - image: site-bff
 manifests:
   rawYaml:
     - service.yaml
+
 deploy:
   cloudrun: {}
+
+profiles:
+  - name: prod-profile
+    manifests:
+      rawYaml:
+        - service.yaml
