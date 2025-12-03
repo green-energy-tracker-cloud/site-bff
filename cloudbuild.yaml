@@ -101,7 +101,7 @@ steps:
       - 'releases'
       - 'create'
       - 'rel-${SHORT_SHA}'
-      - '--delivery-pipeline=pipeline'
+      - '--delivery-pipeline=delivery-pipeline'
       - '--region=us-east1'
       - '--source=./cicd/cd/'
       - '--images=site-bff=$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/$_IMAGE_NAME:${COMMIT_SHA}'
