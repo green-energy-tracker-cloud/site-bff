@@ -1,0 +1,26 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: service-site-bff
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
+        run.googleapis.com/vpc-access-egress: all-traffic
+    spec:
+      containers:
+        - image: site-bff
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATA_REDIS_HOST
+              value: "10.185.178.99"
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi

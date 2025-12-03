@@ -7,13 +7,13 @@ build:
     - image: site-bff
 manifests:
   rawYaml:
-    - service.yaml
+    - service-prod.yaml
 
 deploy:
   cloudrun: {}
 
 profiles:
-  - name: prod-profile
+  - name: prod
     manifests:
       rawYaml:
-        - service.yaml
+        - service-prod.yaml
