@@ -1,12 +1,14 @@
 # Site BFF (Backend-For-Frontend)
 
-![Spring Boot version](https://img.shields.io/badge/Spring_Boot-3.5.8-green)
+![Spring Boot version](https://img.shields.io/badge/Spring_Boot-3.2.5-green)
 ![Java version](https://img.shields.io/badge/Java-21-blue)
 ![GCP version](https://img.shields.io/badge/GCP-5.1.0-yellow)
 ![Reactive](https://img.shields.io/badge/Reactive-WebFlux-purple)
 ![Maven](https://img.shields.io/badge/Build-Maven-red)
 ![Redis](https://img.shields.io/badge/Cache-Redis-red)
 ![Coverage](https://img.shields.io/badge/Coverage-95%25-brightgreen)
+![Resilience4j](https://img.shields.io/badge/Resilience-Resilience4j-orange)
+![Protobuf](https://img.shields.io/badge/Serialization-Protobuf-lightblue)
 
 ---------------------
 ## Table of Contents
@@ -29,10 +31,16 @@
   * [Event-Driven Architecture](#event-driven-architecture)
   * [Eventual Consistency](#eventual-consistency)
   * [Resilience & Error Handling](#resilience--error-handling)
+* [Code Architecture](#code-architecture)
+  * [Project Structure](#project-structure)
+  * [Key Components](#key-components)
+  * [Data Models](#data-models)
 * [Observability](#observability)
 * [Authentication & Security](#authentication--security)
 * [Development Guide](#development-guide)
 * [Deployment](#deployment)
+* [Monitoring & Alerts](#monitoring--alerts)
+* [Troubleshooting](#troubleshooting)
 ---------------------
 
 ## Introduction
@@ -221,10 +229,6 @@ Once started, navigate to:
 # View coverage report
 open target/site/jacoco/index.html
 ```
-
-**Coverage Requirements:**
-- Line Coverage: **95%**
-- Branch Coverage: **90%**
 
 **Integration tests** are executed in the CI/CD pipeline (Cloud Build) against real GCP emulators.
 
@@ -481,6 +485,49 @@ Typical delay: **< 500ms** (p95)
 
 ### Resilience & Error Handling
 
+#### Resilience4j Configuration
+
+The service implements multi-layer resilience patterns using Resilience4j:
+
+**Retry Configuration** (application.yaml):
+```yaml
+resilience4j:
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - RedisConnectionFailureException
+```
+
+**Circuit Breaker Configuration**:
+```yaml
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+```
+
+**Configured Instances:**
+- `pubsub` - Circuit breaker + retry (3 attempts) for Pub/Sub operations
+- `firestore` - Circuit breaker + retry (3 attempts) for Firestore queries
+- `cache` - Retry only (2 attempts) for Redis operations
+
+**Implementation in SiteServiceImpl:**
+```java
+// Example: Pub/Sub publish with retry and circuit breaker
+publisherTemplate.publish(topic, message)
+    .transformDeferred(RetryOperator.of(retryPubSub))
+    .transformDeferred(mono -> cbPubSub.run(mono, fallback))
+```
+
 #### GCP Client Resilience (Built-in)
 
 All GCP clients have automatic retry with exponential backoff:
@@ -519,6 +566,329 @@ All errors return standardized `ApiErrorDto` with:
 - Error message
 - Request path
 - Validation errors (if applicable)
+
+---
+
+## Code Architecture
+
+### Project Structure
+
+```
+site-bff/
+├── src/
+│   ├── main/
+│   │   ├── java/com/green/energy/tracker/cloud/site_bff/
+│   │   │   ├── SiteBffApplication.java          # Main entry point
+│   │   │   ├── config/                           # Configuration classes
+│   │   │   │   ├── RedisConfig.java              # Redis templates configuration
+│   │   │   │   └── ResilienceConfig.java         # Circuit breakers & retry beans
+│   │   │   ├── controller/                       # REST API layer
+│   │   │   │   └── SiteController.java           # Implements generated SitesApi
+│   │   │   ├── service/                          # Business logic layer
+│   │   │   │   ├── SiteService.java              # Service interface
+│   │   │   │   ├── SiteServiceImpl.java          # CQRS implementation + Pub/Sub
+│   │   │   │   ├── SiteCacheService.java         # Cache service interface
+│   │   │   │   └── SiteCacheServiceImpl.java     # Cache-aside pattern implementation
+│   │   │   ├── repository/                       # Data access layer
+│   │   │   │   └── SiteRepository.java           # Firestore reactive repository
+│   │   │   ├── model/                            # Domain models
+│   │   │   │   ├── SiteReadDocument.java         # Firestore entity (read model)
+│   │   │   │   ├── GeoLocationRead.java          # Geolocation value object
+│   │   │   │   └── SiteMapper.java               # MapStruct mapper interface
+│   │   │   └── exception/                        # Exception handling
+│   │   │       ├── SiteControllerAdvice.java     # Global exception handler
+│   │   │       └── SiteProcessingException.java  # Custom exception
+│   │   └── resources/
+│   │       ├── application.yaml                  # Base configuration
+│   │       └── application-local.yaml            # Local development config
+│   └── test/
+│       └── java/com/green/energy/tracker/cloud/site_bff/
+│           ├── config/                           # Config tests
+│           ├── controller/                       # Controller unit tests
+│           ├── service/                          # Service unit tests
+│           ├── repository/                       # Repository tests
+│           ├── model/                            # Mapper tests
+│           └── integration/                      # Integration tests
+│               ├── IntegrationTestBase.java
+│               ├── SiteControllerIntegrationTest.java
+│               ├── SiteServiceIntegrationTest.java
+│               └── SiteRepositoryIntegrationTest.java
+├── target/
+│   ├── generated-sources/                        # OpenAPI generated code
+│   │   └── openapi/.../sitebff/web/
+│   │       ├── api/SitesApi.java                 # Generated API interface
+│   │       └── model/                            # Generated DTOs
+│   └── openapi-specs/                            # Unpacked API contracts
+│       └── openapi/v1/
+│           ├── site-service.yaml                 # Site API specification
+│           ├── sensor-service.yaml
+│           ├── sensor-data-service.yaml
+│           ├── stats-service.yaml
+│           └── common-error.yaml
+├── cd/                                           # Deployment configuration
+│   ├── service.yaml                              # Cloud Run service definition
+│   └── skaffold.yaml                             # Skaffold configuration
+├── docker-compose.yml                            # Local emulators setup
+├── cloudbuild.yaml                               # CI/CD pipeline entry point
+├── pom.xml                                       # Maven dependencies
+└── README.md
+```
+
+### Key Components
+
+#### 1. SiteController (controller/SiteController.java)
+
+**Responsibilities:**
+- Implements OpenAPI-generated `SitesApi` interface
+- Handles HTTP request/response mapping
+- Input validation (Bean Validation)
+- Delegates business logic to `SiteService`
+
+**Key Methods:**
+- `createSite()` → Returns `202 Accepted` with async operation response
+- `getSite()` → Returns `200 OK` or `404 Not Found`
+- `listSites()` → Returns paginated list with `200 OK`
+- `updateSite()` / `patchSite()` → Returns `202 Accepted`
+- `deleteSite()` → Returns `202 Accepted`
+
+All methods return `Mono<ResponseEntity<T>>` for reactive processing.
+
+#### 2. SiteServiceImpl (service/SiteServiceImpl.java)
+
+**Responsibilities:**
+- Implements CQRS pattern (command/query separation)
+- Publishes events to Pub/Sub for write operations
+- Delegates reads to `SiteCacheService`
+- Applies resilience patterns (retry + circuit breaker)
+
+**Key Methods:**
+
+**Commands (Write):**
+```java
+Mono<AsyncOperationResponseDto> create(SiteRequestDto request)
+  - Generates UUID
+  - Builds Site protobuf message
+  - Publishes CREATE event to Pub/Sub
+  - Returns 202 Accepted with trace ID
+
+Mono<AsyncOperationResponseDto> update(UUID id, SiteRequestDto request)
+  - Builds Site protobuf with existing ID
+  - Publishes UPDATE event
+
+Mono<AsyncOperationResponseDto> patch(UUID id, SiteRequestDto request)
+  - Publishes PATCH event (partial update)
+
+Mono<AsyncOperationResponseDto> delete(UUID id)
+  - Publishes DELETE event (no payload)
+```
+
+**Queries (Read):**
+```java
+Mono<SiteResponseDto> get(UUID id)
+  - Delegates to SiteCacheService
+  - Returns cached data or queries Firestore
+
+Mono<ListSitesResponseDto> getAllByUserId(UUID userId, Integer page, Integer size)
+  - Delegates to SiteCacheService
+  - Returns paginated cached list or queries Firestore
+```
+
+**Resilience Implementation:**
+- Each Pub/Sub publish: `RetryOperator.of(retryPubSub)` → `cbPubSub.run()`
+- Each Firestore query: `RetryOperator.of(retryFirestore)` → `cbFirestore.run()`
+- Fallback: Returns `503 Service Unavailable` when circuit breaker opens
+
+#### 3. SiteCacheServiceImpl (service/SiteCacheServiceImpl.java)
+
+**Responsibilities:**
+- Implements cache-aside pattern
+- Manages Redis caching with TTL
+- Provides automatic fallback to Firestore on cache failures
+
+**Cache Strategy:**
+```java
+Mono<T> getFromCache(String cacheKey, Supplier<Mono<T>> dbFallback) {
+  1. Attempt GET from Redis (with retry)
+  2. If cache HIT → return data
+  3. If cache MISS:
+     a. Execute dbFallback supplier (Firestore query)
+     b. Store result in Redis with TTL (3600s)
+     c. On cache SET failure → log warning, ignore error
+     d. Return data from DB
+  4. If cache GET fails → fallback directly to DB
+}
+```
+
+**Cache Keys:**
+- Single site: `site:{uuid}`
+- User sites list: `site:user:{userId}:page:{page}:size:{size}`
+
+**Redis Templates:**
+- `ReactiveRedisTemplate<String, SiteResponseDto>` for single sites
+- `ReactiveRedisTemplate<String, ListSitesResponseDto>` for lists
+
+#### 4. SiteRepository (repository/SiteRepository.java)
+
+**Interface:**
+```java
+public interface SiteRepository extends FirestoreReactiveRepository<SiteReadDocument> {
+    Flux<SiteReadDocument> findAllByUserId(String userId, Pageable pageable);
+    Mono<Long> countByUserId(String userId);
+}
+```
+
+**Features:**
+- Spring Data Firestore reactive repository
+- Collection name: `sites`
+- Automatic query derivation from method names
+- Returns reactive types (`Mono`, `Flux`)
+
+#### 5. SiteMapper (model/SiteMapper.java)
+
+**MapStruct Interface:**
+```java
+@Mapper(componentModel = "spring")
+public interface SiteMapper {
+    SiteResponseDto toDto(SiteReadDocument entity);
+
+    // Custom mappings
+    OffsetDateTime timestampToOffsetDateTime(Timestamp timestamp);
+    Timestamp offsetDateTimeToTimestamp(OffsetDateTime offsetDateTime);
+    UUID stringToUuid(String value);
+    String uuidToString(UUID value);
+}
+```
+
+**Generated at compile time** - implementation created by MapStruct annotation processor.
+
+#### 6. ResilienceConfig (config/ResilienceConfig.java)
+
+**Bean Definitions:**
+```java
+@Bean("cbPubSub")
+ReactiveCircuitBreaker circuitBreakerPubSub()
+
+@Bean("cbFirestore")
+ReactiveCircuitBreaker circuitBreakerFirestore()
+
+@Bean("retryPubSub")
+Retry retryPubSub()
+
+@Bean("retryFirestore")
+Retry retryFirestore()
+
+@Bean("retryCache")
+Retry retryCache()
+```
+
+Configuration loaded from `application.yaml` via `RetryRegistry` and `ReactiveCircuitBreakerFactory`.
+
+#### 7. RedisConfig (config/RedisConfig.java)
+
+**Bean Definitions:**
+```java
+@Bean
+ReactiveRedisTemplate<String, SiteResponseDto> redisSiteResponseDtoTemplate()
+  - Jackson2JsonRedisSerializer with JavaTimeModule
+  - StringRedisSerializer for keys
+
+@Bean
+ReactiveRedisTemplate<String, ListSitesResponseDto> redisListSitesResponseDtoTemplate()
+  - Separate template for list responses
+```
+
+Enables JSON serialization of DTOs with proper `OffsetDateTime` handling.
+
+#### 8. SiteControllerAdvice (exception/SiteControllerAdvice.java)
+
+**Global Exception Handlers:**
+```java
+@ExceptionHandler(ResponseStatusException.class)
+  - Maps to original status code
+  - Extracts reason as message
+
+@ExceptionHandler(WebExchangeBindException.class)
+  - Maps to 400 Bad Request
+  - Extracts field validation errors
+
+@ExceptionHandler(SiteProcessingException.class)
+  - Maps to 503 Service Unavailable
+
+@ExceptionHandler(Exception.class)
+  - Catches all unhandled exceptions
+  - Maps to 500 Internal Server Error
+  - Generic error message for security
+```
+
+All return `Mono<ResponseEntity<ApiErrorDto>>` for reactive handling.
+
+### Data Models
+
+#### Domain Model (Firestore)
+
+**SiteReadDocument.java:**
+```java
+@Document(collectionName = "sites")
+public class SiteReadDocument {
+    @DocumentId
+    private String id;                    // UUID string
+    private String name;                  // Site name
+    private String userId;                // Owner UUID string
+    private String address;               // Full address
+    private GeoLocationRead location;     // GPS coordinates
+    private Timestamp createdAt;          // Google Cloud Timestamp
+    private Timestamp updatedAt;          // Last modification
+}
+```
+
+**GeoLocationRead.java:**
+```java
+public class GeoLocationRead {
+    private double latitude;              // -90 to 90
+    private double longitude;             // -180 to 180
+}
+```
+
+#### Event Model (Pub/Sub)
+
+**Protobuf Definition:**
+```protobuf
+message Site {
+  string id = 1;
+  string user_id = 2;
+  string name = 3;
+  string address = 4;
+  GeoLocation location = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message GeoLocation {
+  double latitude = 1;
+  double longitude = 2;
+}
+```
+
+**Pub/Sub Message:**
+```
+PubsubMessage {
+  data: Site.toByteString()           // Binary protobuf
+  attributes: {
+    "event_type": "CREATE|UPDATE|PATCH|DELETE"
+    "entity_id": "uuid-string"
+  }
+}
+```
+
+#### API Models (OpenAPI Generated)
+
+From `target/openapi-specs/openapi/v1/site-service.yaml`:
+
+**SiteRequestDto** - Input DTO for create/update operations
+**SiteResponseDto** - Output DTO for read operations
+**ListSitesResponseDto** - Paginated list response
+**AsyncOperationResponseDto** - Async operation acknowledgment
+**ApiErrorDto** - Standardized error response
 
 ---
 
@@ -671,16 +1041,27 @@ site-bff/
 
 | Library | Version | Purpose |
 |---------|---------|---------|
-| Spring Boot | 3.5.8 | Framework |
+| Spring Boot | 3.2.5 | Framework |
 | Spring WebFlux | (included) | Reactive web |
 | Spring Cloud GCP | 5.1.0 | GCP integrations |
-| Redis Reactive | (included) | Caching |
+| Spring Data Redis Reactive | (included) | Reactive caching |
+| Resilience4j | (included) | Circuit breaker & retry |
 | Protobuf | 4.28.2 | Message serialization |
+| jackson-datatype-protobuf | 0.9.13 | Protobuf JSON serialization |
 | MapStruct | 1.6.3 | Object mapping |
+| Lombok | (included) | Boilerplate reduction |
+| springdoc-openapi | 2.5.0 | Swagger UI |
+| logstash-logback-encoder | 7.4 | Structured logging |
 | JaCoCo | 0.8.11 | Code coverage |
 
 **External Dependency:**
 - `api-contracts:1.1.1` - OpenAPI specs from Google Artifact Registry
+
+**Build Plugins:**
+- `openapi-generator-maven-plugin` (7.1.0) - Generates API interfaces and DTOs from OpenAPI specs
+- `maven-dependency-plugin` - Unpacks `api-contracts` JAR to extract YAML specs
+- `jacoco-maven-plugin` (0.8.11) - Code coverage reporting
+- `maven-compiler-plugin` - Annotation processing for Lombok + MapStruct
 
 ---
 
@@ -688,36 +1069,44 @@ site-bff/
 
 ### Cloud Build Pipeline
 
-**Pipeline Stages:**
+**Pipeline Architecture:**
 
+The project uses a **two-tier CI/CD pipeline** for shared configuration management:
+
+1. **Entry Point** (`cloudbuild.yaml`):
+   - Clones shared `ci-cd-templates` repository
+   - Triggers child pipeline with substitutions
+
+2. **Shared Template** (`ci-cd-templates/cloudbuild-template.yaml`):
+   - Contains actual build/test/deploy steps
+   - Shared across all microservices
+
+**cloudbuild.yaml (current repository):**
 ```yaml
-# cloudbuild__.yaml (simplified)
+substitutions:
+  _IMAGE_NAME: "site-bff"
+  _SERVICE_NAME: "site-bff"
+
 steps:
-  # 1. Build
-  - name: maven:3-openjdk-21
-    args: ['mvn', 'clean', 'package', '-DskipTests']
+  - id: "Fetch CI Templates"
+    name: 'gcr.io/cloud-builders/git'
+    args: ['clone', 'https://github.com/green-energy-tracker-cloud/ci-cd-templates.git', 'ci-template']
 
-  # 2. Unit Tests
-  - name: maven:3-openjdk-21
-    args: ['mvn', 'test']
-
-  # 3. Integration Tests (with emulators)
-  - name: maven:3-openjdk-21
-    args: ['mvn', 'verify', '-P', 'integration-tests']
-    env: [FIRESTORE_EMULATOR_HOST, PUBSUB_EMULATOR_HOST]
-
-  # 4. Build Docker Image
-  - name: gcr.io/cloud-builders/docker
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/site-bff:$SHORT_SHA', '.']
-
-  # 5. Push to Container Registry
-  - name: gcr.io/cloud-builders/docker
-    args: ['push', 'gcr.io/$PROJECT_ID/site-bff:$SHORT_SHA']
-
-  # 6. Deploy to Cloud Run
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    args: ['gcloud', 'run', 'deploy', 'site-bff', ...]
+  - id: "Trigger Child Pipeline"
+    name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'builds'
+      - 'submit'
+      - '.'
+      - '--config=ci-template/cloudbuild-template.yaml'
+      - '--substitutions=_IMAGE_NAME=site-bff,_SERVICE_NAME=site-bff,_COMMIT_SHA=$COMMIT_SHA,_SHORT_SHA=$SHORT_SHA'
 ```
+
+**Benefits of Two-Tier Approach:**
+- Centralized pipeline management
+- Consistent build process across services
+- Easy updates to all microservices simultaneously
+- Reduced duplication
 
 ### Dockerfile (Multi-stage)
 
@@ -737,6 +1126,65 @@ COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
+
+### Skaffold Deployment
+
+**Skaffold Configuration** (`cd/skaffold.yaml`):
+```yaml
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: site-bff
+build:
+  artifacts:
+    - image: site-bff
+manifests:
+  rawYaml:
+    - service.yaml
+deploy:
+  cloudrun: {}
+profiles:
+  - name: prod-profile
+    manifests:
+      rawYaml:
+        - service.yaml
+```
+
+**Cloud Run Service Manifest** (`cd/service.yaml`):
+```yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: service-site-bff
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
+        run.googleapis.com/vpc-access-egress: all-traffic
+    spec:
+      containers:
+        - image: site-bff  # Replaced by Skaffold
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATA_REDIS_HOST
+              value: "10.185.178.99"  # Internal VPC IP
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+```
+
+**Key Configuration:**
+- VPC connector for internal Redis access
+- All egress traffic through VPC
+- CPU: 1 vCPU, Memory: 1GB
+- Port 8080 exposed
 
 ### Environment-Specific Configs
 
@@ -810,51 +1258,3 @@ logging:
 ```
 
 ---
-
-## Contributing
-
-### Quality Gates
-
-Before submitting PR:
-- [ ] All tests pass (`./mvnw test`)
-- [ ] Code coverage ≥ 95% line, 90% branch
-- [ ] No checkstyle violations
-- [ ] OpenAPI contract updated (if API changes)
-- [ ] README updated (if applicable)
-
-### Commit Message Format
-
-```
-type(scope): subject
-
-body
-
-footer
-```
-
-**Example:**
-```
-feat(cache): add TTL configuration for site cache
-
-- Add spring.data.redis.ttl-seconds property
-- Update SiteCacheServiceImpl to use configurable TTL
-- Add tests for TTL configuration
-
-Closes #123
-```
-
----
-
-## License
-
-Copyright © 2024 Green Energy Tracker Cloud
-All rights reserved.
-
----
-
-## Support
-
-For issues or questions:
-- **Issues**: GitHub Issues
-- **Documentation**: Confluence Wiki
-- **Chat**: Slack #site-bff-support
