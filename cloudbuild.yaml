@@ -8,7 +8,7 @@ steps:
     args:
       - '-c'
       - |
-        git clone https://github.com/green-energy-tracker-cloud/ci-cd-templates.git
+        git clone https://github.com/green-energy-tracker-cloud/ci-cd-templates.git ci-template
 
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
@@ -16,5 +16,5 @@ steps:
       - '-c'
       - |
         gcloud builds submit . \
-          --config=./cloudbuild-template.yaml \
+          --config=ci-template/cloudbuild-template.yaml \
           --substitutions=_IMAGE_NAME="site-bff",_SERVICE_NAME="site-bff"
