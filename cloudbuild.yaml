@@ -1,20 +1,26 @@
+substitutions:
+  _IMAGE_NAME: "site-bff"
+  _SERVICE_NAME: "site-bff"
+
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
 
 steps:
 
-  - name: 'gcr.io/cloud-builders/git'
+  - id: "Fetch CI Templates"
+    name: 'gcr.io/cloud-builders/git'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         git clone https://github.com/green-energy-tracker-cloud/ci-cd-templates.git ci-template
 
-  - name: 'gcr.io/cloud-builders/gcloud'
+  - id: "Trigger Child Pipeline"
+    name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         gcloud builds submit . \
           --config=ci-template/cloudbuild-template.yaml \
-          --substitutions=_IMAGE_NAME="site-bff",_SERVICE_NAME="site-bff"
+          --substitutions=_IMAGE_NAME="$_IMAGE_NAME",_SERVICE_NAME="$_SERVICE_NAME"
