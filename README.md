@@ -691,7 +691,7 @@ site-bff/
 **Pipeline Stages:**
 
 ```yaml
-# cloudbuild.yaml (simplified)
+# cloudbuild__.yaml (simplified)
 steps:
   # 1. Build
   - name: maven:3-openjdk-21
