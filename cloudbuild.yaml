@@ -1,3 +1,6 @@
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+
 steps:
 
   - name: 'gcr.io/cloud-builders/git'
@@ -13,5 +16,5 @@ steps:
       - '-c'
       - |
         gcloud builds submit . \
-          --config=ci-config/path/to/cloudbuild.yaml \
+          --config=./cloudbuild-template.yaml \
           --substitutions=_IMAGE_NAME="site-bff",_SERVICE_NAME="site-bff"
