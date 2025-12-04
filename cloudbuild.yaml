@@ -23,4 +23,4 @@ steps:
       - |
         gcloud builds submit . \
           --config=ci-template/cloudbuild-template.yaml \
-          --substitutions=_IMAGE_NAME="$_IMAGE_NAME",_SERVICE_NAME="$_SERVICE_NAME"
+          --substitutions=_IMAGE_NAME="$_IMAGE_NAME",_SERVICE_NAME="$_SERVICE_NAME",_COMMIT_SHA="$COMMIT_SHA"
