@@ -9,9 +9,7 @@ steps:
       - '-c'
       - |
         git clone https://github.com/green-energy-tracker-cloud/ci-cd-templates.git ci-template
-        echo "================ LISTA FILE SCARICATI ================"
-        ls -R ci-template
-        echo "======================================================"
+
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
