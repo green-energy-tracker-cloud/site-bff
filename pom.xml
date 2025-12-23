@@ -17,7 +17,7 @@
 		<java.version>21</java.version>
 		<spring-cloud-gcp.version>5.1.0</spring-cloud-gcp.version>
 		<spring-cloud.version>2023.0.0</spring-cloud.version>
-		<api-contracts.version>1.1.1</api-contracts.version>
+		<api-contracts.version>1.1.2</api-contracts.version>
 		<protobuf.version>4.28.2</protobuf.version>
 		<jackson-protobuf.version>0.9.13</jackson-protobuf.version>
 		<artifact-registry-wagon.version>2.2.5</artifact-registry-wagon.version>
