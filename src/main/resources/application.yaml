@@ -53,3 +53,13 @@ resilience4j:
         baseConfig: default
       pubsub:
         baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 5s
+        cancelRunningFuture: true
+    instances:
+      firestore:
+        baseConfig: default
+      pubsub:
+        baseConfig: default
