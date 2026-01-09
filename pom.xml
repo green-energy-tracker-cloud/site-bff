@@ -30,7 +30,7 @@
 		<map.lombok.mapstruct.version>0.2.0</map.lombok.mapstruct.version>
 		<logstash.logback.version>7.4</logstash.logback.version>
 		<jacoco.maven.plugin.version>0.8.11</jacoco.maven.plugin.version>
-		<url.api.contracts.repo>artifactregistry://us-east1-maven.pkg.dev/reference-lens-482009-j5/api-contracts-repo</url.api.contracts.repo>
+		<url.api.contracts.repo>artifactregistry://us-east1-maven.pkg.dev/green-energy-tracker-cloud-v3/api-contracts-repo</url.api.contracts.repo>
 	</properties>
 	<repositories>
 		<repository>
