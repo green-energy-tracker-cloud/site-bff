@@ -23,5 +23,4 @@ steps:
       - |
         gcloud builds submit . \
           --config=ci-template/cloudbuild-template.yaml \
-          --project=green-energy-tracker-cloud-v3 \
           --substitutions=_IMAGE_NAME="$_IMAGE_NAME",_SERVICE_NAME="$_SERVICE_NAME",_COMMIT_SHA="$COMMIT_SHA",_SHORT_SHA="$SHORT_SHA"
