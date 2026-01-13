@@ -9,7 +9,7 @@ spec:
         run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
         run.googleapis.com/vpc-access-egress: all-traffic
     spec:
-      serviceAccountName: cr-site-bff-prod@green-eenergy-tracker-cloud-v3.iam.gserviceaccount.com
+      serviceAccountName: cr-site-bff-prod@green-energy-tracker-cloud-v3.iam.gserviceaccount.com
       containers:
         - image: site-bff
           ports:
