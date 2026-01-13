@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 @Slf4j
 public class SiteControllerAdvice {
-
+    // ResponseStatusException handler
     @ExceptionHandler(ResponseStatusException.class)
     public Mono<ResponseEntity<ApiErrorDto>> handleResponseStatusException(ResponseStatusException ex, ServerWebExchange exchange) {
         log.warn("Request failed with status {}: {}", ex.getStatusCode(), ex.getReason());
