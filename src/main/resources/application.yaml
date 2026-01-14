@@ -47,6 +47,7 @@ resilience4j:
         registerHealthIndicator: true
         slidingWindowType: COUNT_BASED
         slidingWindowSize: 10
+        minimumNumberOfCalls: 5
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
         permittedNumberOfCallsInHalfOpenState: 3
@@ -58,7 +59,7 @@ resilience4j:
   timelimiter:
     configs:
       default:
-        timeoutDuration: 10s
+        timeoutDuration: 5s
         cancelRunningFuture: true
     instances:
       firestore:

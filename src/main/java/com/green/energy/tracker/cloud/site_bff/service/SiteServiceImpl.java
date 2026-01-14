@@ -27,6 +27,7 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
@@ -148,7 +149,11 @@ public class SiteServiceImpl implements SiteService {
         return Mono.fromFuture(publisherTemplate.publish(siteEventsTopic, messageBuilder.build()))
                 .transformDeferred(RetryOperator.of(retryPubSub))
                 .transformDeferred(mono -> fallbackCircuitBreaker(mono, cbPubSub, CB_PUBSUB_ID, eventType.name()))
-                .map(messageId -> createAsyncOperationResponseDto(messageId, id));
+                .map(messageId -> createAsyncOperationResponseDto(messageId, id))
+                .onErrorResume(TimeoutException.class, ex -> {
+                    log.error("Operation timed out after all retries for event type {}.", eventType, ex);
+                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
+                });
     }
 
     private AsyncOperationResponseDto createAsyncOperationResponseDto(String messageId, String id) {
@@ -165,7 +170,11 @@ public class SiteServiceImpl implements SiteService {
                 .transformDeferred(RetryOperator.of(retryFirestore))
                 .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, CB_FIRESTORE_ID, "findById"))
                 .map(siteMapper::toDto)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Site with id %s not found", id))));
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Site with id %s not found", id))))
+                .onErrorResume(TimeoutException.class, ex -> {
+                    log.error("Operation timed out after all retries for findById.", ex);
+                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
+                });
     }
 
     private Mono<ListSitesResponseDto> getSitesByUserIdFromDb(UUID userId, int page, int size) {
@@ -189,6 +198,10 @@ public class SiteServiceImpl implements SiteService {
                     listSitesResponseDto.setSites(sites);
                     listSitesResponseDto.setTotalPages((int) Math.ceil((double) totalElements / size));
                     return listSitesResponseDto;
+                })
+                .onErrorResume(TimeoutException.class, ex -> {
+                    log.error("Operation timed out after all retries for getSitesByUserIdFromDb.", ex);
+                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
                 });
     }
 
