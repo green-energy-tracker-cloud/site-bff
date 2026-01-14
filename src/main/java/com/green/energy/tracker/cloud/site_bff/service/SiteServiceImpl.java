@@ -11,12 +11,12 @@ import com.green.energy.tracker.cloud.sitebff.web.model.AsyncOperationResponseDt
 import com.green.energy.tracker.cloud.sitebff.web.model.ListSitesResponseDto;
 import com.green.energy.tracker.cloud.sitebff.web.model.SiteRequestDto;
 import com.green.energy.tracker.cloud.sitebff.web.model.SiteResponseDto;
-import io.github.resilience4j.reactor.retry.RetryOperator;
-import io.github.resilience4j.retry.Retry;
+//import io.github.resilience4j.reactor.retry.RetryOperator;
+//import io.github.resilience4j.retry.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
+//import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -39,40 +39,41 @@ public class SiteServiceImpl implements SiteService {
     @Value("${pagination.default.size:10}")
     private int defaultPageSize;
 
-    private static final String CB_FIRESTORE_ID = "firestore";
-    private static final String CB_PUBSUB_ID = "pubsub";
+//    private static final String CB_FIRESTORE_ID = "firestore";
+//    private static final String CB_PUBSUB_ID = "pubsub";
 
     private final PubSubPublisherTemplate publisherTemplate;
     private final SiteMapper siteMapper;
     private final SiteRepository siteRepository;
     private final SiteCacheService siteCacheService;
-    private final ReactiveCircuitBreaker cbPubSub;
-    private final ReactiveCircuitBreaker cbFirestore;
-    private final Retry retryPubSub;
-    private final Retry retryFirestore;
+//    private final ReactiveCircuitBreaker cbPubSub;
+//    private final ReactiveCircuitBreaker cbFirestore;
+//    private final Retry retryPubSub;
+//    private final Retry retryFirestore;
 
     public SiteServiceImpl(PubSubPublisherTemplate publisherTemplate,
                            SiteMapper siteMapper,
                            SiteRepository siteRepository,
-                           SiteCacheService siteCacheService,
-                           @Qualifier("cbPubSub") ReactiveCircuitBreaker cbPubSub,
-                           @Qualifier("cbFirestore") ReactiveCircuitBreaker cbFirestore,
-                           @Qualifier("retryPubSub") Retry retryPubSub,
-                           @Qualifier("retryFirestore") Retry retryFirestore) {
+                           SiteCacheService siteCacheService
+//                           @Qualifier("cbPubSub") ReactiveCircuitBreaker cbPubSub,
+//                           @Qualifier("cbFirestore") ReactiveCircuitBreaker cbFirestore,
+//                           @Qualifier("retryPubSub") Retry retryPubSub,
+//                           @Qualifier("retryFirestore") Retry retryFirestore
+    ) {
         this.publisherTemplate = publisherTemplate;
         this.siteMapper = siteMapper;
         this.siteRepository = siteRepository;
         this.siteCacheService = siteCacheService;
-        this.cbPubSub = cbPubSub;
-        this.cbFirestore = cbFirestore;
-        this.retryPubSub = retryPubSub;
-        this.retryFirestore = retryFirestore;
+//        this.cbPubSub = cbPubSub;
+//        this.cbFirestore = cbFirestore;
+//        this.retryPubSub = retryPubSub;
+//        this.retryFirestore = retryFirestore;
 
-        this.retryPubSub.getEventPublisher().onRetry(event -> log.warn("Retrying PubSub. Attempt #{} due to: {}",
-                event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : ""));
-
-        this.retryFirestore.getEventPublisher().onRetry(event -> log.warn("Retrying Firestore. Attempt #{} due to: {}",
-                event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : ""));
+//        this.retryPubSub.getEventPublisher().onRetry(event -> log.warn("Retrying PubSub. Attempt #{} due to: {}",
+//                event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : ""));
+//
+//        this.retryFirestore.getEventPublisher().onRetry(event -> log.warn("Retrying Firestore. Attempt #{} due to: {}",
+//                event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : ""));
     }
 
     @Override
@@ -147,13 +148,14 @@ public class SiteServiceImpl implements SiteService {
             messageBuilder.setData(payload.toByteString());
 
         return Mono.fromFuture(publisherTemplate.publish(siteEventsTopic, messageBuilder.build()))
-                .transformDeferred(RetryOperator.of(retryPubSub))
-                .transformDeferred(mono -> fallbackCircuitBreaker(mono, cbPubSub, CB_PUBSUB_ID, eventType.name()))
-                .map(messageId -> createAsyncOperationResponseDto(messageId, id))
-                .onErrorResume(TimeoutException.class, ex -> {
-                    log.error("Operation timed out after all retries for event type {}.", eventType, ex);
-                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
-                });
+//                .doOnError(throwable -> log.warn("Initial PubSub publish attempt failed for eventType {}", eventType, throwable))
+//                .transformDeferred(RetryOperator.of(retryPubSub))
+//                .transformDeferred(mono -> fallbackCircuitBreaker(mono, cbPubSub, CB_PUBSUB_ID, eventType.name()))
+                .map(messageId -> createAsyncOperationResponseDto(messageId, id));
+//                .onErrorResume(TimeoutException.class, ex -> {
+//                    log.error("Operation timed out after all retries for event type {}.", eventType, ex);
+//                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
+//                });
     }
 
     private AsyncOperationResponseDto createAsyncOperationResponseDto(String messageId, String id) {
@@ -167,25 +169,28 @@ public class SiteServiceImpl implements SiteService {
     private Mono<SiteResponseDto> getSiteFromDb(UUID id) {
         return siteRepository
                 .findById(id.toString())
-                .transformDeferred(RetryOperator.of(retryFirestore))
-                .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, CB_FIRESTORE_ID, "findById"))
+//                .doOnError(throwable -> log.warn("Initial Firestore findById attempt failed for id {}", id, throwable))
+//                .transformDeferred(RetryOperator.of(retryFirestore))
+//                .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, CB_FIRESTORE_ID, "findById"))
                 .map(siteMapper::toDto)
-                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Site with id %s not found", id))))
-                .onErrorResume(TimeoutException.class, ex -> {
-                    log.error("Operation timed out after all retries for findById.", ex);
-                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
-                });
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Site with id %s not found", id))));
+//                .onErrorResume(TimeoutException.class, ex -> {
+//                    log.error("Operation timed out after all retries for findById.", ex);
+//                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
+//                });
     }
 
     private Mono<ListSitesResponseDto> getSitesByUserIdFromDb(UUID userId, int page, int size) {
         var pageable = PageRequest.of(page, size);
-        var countByUserId = siteRepository.countByUserId(userId.toString())
-                .transformDeferred(RetryOperator.of(retryFirestore))
-                .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, CB_FIRESTORE_ID, "countByUserId"));
+        var countByUserId = siteRepository.countByUserId(userId.toString());
+//                .doOnError(throwable -> log.warn("Initial Firestore countByUserId attempt failed for userId {}", userId, throwable))
+//                .transformDeferred(RetryOperator.of(retryFirestore))
+//                .transformDeferred(mono-> fallbackCircuitBreaker(mono, cbFirestore, CB_FIRESTORE_ID, "countByUserId"));
 
         var sitesList = siteRepository.findAllByUserId(userId.toString(), pageable)
-                .transformDeferred(RetryOperator.of(retryFirestore))
-                .transformDeferred(flux-> fallbackCircuitBreaker(flux, cbFirestore, CB_FIRESTORE_ID, "findAllByUserId"))
+//                .doOnError(throwable -> log.warn("Initial Firestore findAllByUserId attempt failed for userId {}", userId, throwable))
+//                .transformDeferred(RetryOperator.of(retryFirestore))
+//                .transformDeferred(flux-> fallbackCircuitBreaker(flux, cbFirestore, CB_FIRESTORE_ID, "findAllByUserId"))
                 .map(siteMapper::toDto)
                 .collectList();
 
@@ -198,24 +203,24 @@ public class SiteServiceImpl implements SiteService {
                     listSitesResponseDto.setSites(sites);
                     listSitesResponseDto.setTotalPages((int) Math.ceil((double) totalElements / size));
                     return listSitesResponseDto;
-                })
-                .onErrorResume(TimeoutException.class, ex -> {
-                    log.error("Operation timed out after all retries for getSitesByUserIdFromDb.", ex);
-                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
                 });
+//                .onErrorResume(TimeoutException.class, ex -> {
+//                    log.error("Operation timed out after all retries for getSitesByUserIdFromDb.", ex);
+//                    return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Operation timed out after all retries."));
+//                });
     }
 
-    private <T> Mono<T> fallbackCircuitBreaker(Mono<T> it, ReactiveCircuitBreaker cb, String cbId,  String eventType){
-        return cb.run(it, throwable -> {
-            log.error("{} Circuit Breaker is open for event type {}. Fallback initiated.", cbId, eventType, throwable);
-            return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Service is temporarily unavailable."));
-        });
-    }
-
-    private <T> Flux<T> fallbackCircuitBreaker(Flux<T> it, ReactiveCircuitBreaker cb, String cbId, String eventType){
-        return cb.run(it, throwable -> {
-            log.error("{} Circuit Breaker is open for event type {}. Fallback initiated.", cbId, eventType, throwable);
-            return Flux.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Service is temporarily unavailable."));
-        });
-    }
+//    private <T> Mono<T> fallbackCircuitBreaker(Mono<T> it, ReactiveCircuitBreaker cb, String cbId,  String eventType){
+//        return cb.run(it, throwable -> {
+//            log.error("{} Circuit Breaker is open for event type {}. Fallback initiated.", cbId, eventType, throwable);
+//            return Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Service is temporarily unavailable."));
+//        });
+//    }
+//
+//    private <T> Flux<T> fallbackCircuitBreaker(Flux<T> it, ReactiveCircuitBreaker cb, String cbId, String eventType){
+//        return cb.run(it, throwable -> {
+//            log.error("{} Circuit Breaker is open for event type {}. Fallback initiated.", cbId, eventType, throwable);
+//            return Flux.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Service is temporarily unavailable."));
+//        });
+//    }
 }
