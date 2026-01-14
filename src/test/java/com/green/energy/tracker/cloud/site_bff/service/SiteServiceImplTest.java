@@ -7,14 +7,11 @@ import com.green.energy.tracker.cloud.site_bff.model.SiteMapper;
 import com.green.energy.tracker.cloud.site_bff.model.SiteReadDocument;
 import com.green.energy.tracker.cloud.site_bff.repository.SiteRepository;
 import com.green.energy.tracker.cloud.sitebff.web.model.*;
-import io.github.resilience4j.retry.Retry;
-import io.github.resilience4j.retry.RetryConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -23,11 +20,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -48,16 +43,7 @@ class SiteServiceImplTest {
     @Mock
     private SiteCacheService siteCacheService;
 
-    @Mock
-    private ReactiveCircuitBreaker cbPubSub;
-
-    @Mock
-    private ReactiveCircuitBreaker cbFirestore;
-
     private SiteServiceImpl siteService;
-
-    private Retry retryPubSub;
-    private Retry retryFirestore;
 
     private static final String SITE_EVENTS_TOPIC = "site-events";
     private static final int DEFAULT_PAGE = 0;
@@ -65,23 +51,11 @@ class SiteServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        RetryConfig retryConfig = RetryConfig.custom()
-                .maxAttempts(3)
-                .waitDuration(Duration.ofMillis(100))
-                .build();
-
-        retryPubSub = Retry.of("pubsub", retryConfig);
-        retryFirestore = Retry.of("firestore", retryConfig);
-
         siteService = new SiteServiceImpl(
                 publisherTemplate,
                 siteMapper,
                 siteRepository,
-                siteCacheService,
-                cbPubSub,
-                cbFirestore,
-                retryPubSub,
-                retryFirestore
+                siteCacheService
         );
 
         ReflectionTestUtils.setField(siteService, "siteEventsTopic", SITE_EVENTS_TOPIC);
@@ -97,8 +71,6 @@ class SiteServiceImplTest {
 
         when(publisherTemplate.publish(eq(SITE_EVENTS_TOPIC), any()))
                 .thenReturn(CompletableFuture.completedFuture(messageId));
-        when(cbPubSub.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<AsyncOperationResponseDto> result = siteService.create(request);
@@ -122,8 +94,6 @@ class SiteServiceImplTest {
 
         when(publisherTemplate.publish(eq(SITE_EVENTS_TOPIC), any()))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Publish failed")));
-        when(cbPubSub.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<AsyncOperationResponseDto> result = siteService.create(request);
@@ -142,8 +112,6 @@ class SiteServiceImplTest {
 
         when(publisherTemplate.publish(eq(SITE_EVENTS_TOPIC), any()))
                 .thenReturn(CompletableFuture.completedFuture(messageId));
-        when(cbPubSub.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<AsyncOperationResponseDto> result = siteService.delete(siteId);
@@ -193,8 +161,6 @@ class SiteServiceImplTest {
 
         when(siteRepository.findById(siteId.toString()))
                 .thenReturn(Mono.empty());
-        when(cbFirestore.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<SiteResponseDto> result = siteService.get(siteId);
@@ -224,8 +190,6 @@ class SiteServiceImplTest {
                 .thenReturn(Mono.just(document));
         when(siteMapper.toDto(document))
                 .thenReturn(expectedResponse);
-        when(cbFirestore.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<SiteResponseDto> result = siteService.get(siteId);
@@ -304,10 +268,6 @@ class SiteServiceImplTest {
                 .thenReturn(Flux.just(doc1, doc2));
         when(siteMapper.toDto(doc1)).thenReturn(dto1);
         when(siteMapper.toDto(doc2)).thenReturn(dto2);
-        when(cbFirestore.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(cbFirestore.run(any(Flux.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<ListSitesResponseDto> result = siteService.getAllByUserId(userId, page, size);
@@ -342,10 +302,6 @@ class SiteServiceImplTest {
                 .thenReturn(Mono.just(25L));
         when(siteRepository.findAllByUserId(eq(userId.toString()), any(Pageable.class)))
                 .thenReturn(Flux.empty());
-        when(cbFirestore.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(cbFirestore.run(any(Flux.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<ListSitesResponseDto> result = siteService.getAllByUserId(userId, page, size);
@@ -368,8 +324,6 @@ class SiteServiceImplTest {
 
         when(publisherTemplate.publish(eq(SITE_EVENTS_TOPIC), any()))
                 .thenReturn(CompletableFuture.completedFuture(messageId));
-        when(cbPubSub.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<AsyncOperationResponseDto> result = siteService.patch(siteId, request);
@@ -395,8 +349,6 @@ class SiteServiceImplTest {
 
         when(publisherTemplate.publish(eq(SITE_EVENTS_TOPIC), any()))
                 .thenReturn(CompletableFuture.completedFuture(messageId));
-        when(cbPubSub.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         Mono<AsyncOperationResponseDto> result = siteService.update(siteId, request);
@@ -411,131 +363,6 @@ class SiteServiceImplTest {
                 .verifyComplete();
 
         verify(publisherTemplate).publish(eq(SITE_EVENTS_TOPIC), any());
-    }
-
-    @Test
-    void create_WhenCircuitBreakerIsOpen_ShouldReturnServiceUnavailable() {
-        // Given
-        SiteRequestDto request = createSiteRequestDto();
-
-        when(publisherTemplate.publish(eq(SITE_EVENTS_TOPIC), any()))
-                .thenReturn(CompletableFuture.completedFuture("msg-123"));
-
-        when(cbPubSub.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> {
-                    Function<Throwable, Mono> fallback = invocation.getArgument(1);
-                    return fallback.apply(new RuntimeException("Circuit breaker open"));
-                });
-
-        // When
-        Mono<AsyncOperationResponseDto> result = siteService.create(request);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(error ->
-                        error instanceof ResponseStatusException &&
-                                ((ResponseStatusException) error).getStatusCode().equals(HttpStatus.SERVICE_UNAVAILABLE))
-                .verify();
-    }
-
-    @Test
-    void get_WhenCircuitBreakerIsOpen_ShouldReturnServiceUnavailable() {
-        // Given
-        UUID siteId = UUID.randomUUID();
-
-        when(siteCacheService.getSite(eq(siteId), any()))
-                .thenAnswer(invocation -> {
-                    var supplier = invocation.getArgument(1, java.util.function.Supplier.class);
-                    return supplier.get();
-                });
-
-        when(siteRepository.findById(siteId.toString()))
-                .thenReturn(Mono.just(createSiteReadDocument(siteId)));
-
-        when(cbFirestore.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> {
-                    Function<Throwable, Mono> fallback = invocation.getArgument(1);
-                    return fallback.apply(new RuntimeException("Circuit breaker open"));
-                });
-
-        // When
-        Mono<SiteResponseDto> result = siteService.get(siteId);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(error ->
-                        error instanceof ResponseStatusException &&
-                                ((ResponseStatusException) error).getStatusCode().equals(HttpStatus.SERVICE_UNAVAILABLE))
-                .verify();
-    }
-
-    @Test
-    void getAllByUserId_WhenCircuitBreakerIsOpenOnCount_ShouldReturnServiceUnavailable() {
-        // Given
-        UUID userId = UUID.randomUUID();
-
-        when(siteCacheService.getSitesByUserId(eq(userId), anyInt(), anyInt(), any()))
-                .thenAnswer(invocation -> {
-                    var supplier = invocation.getArgument(3, java.util.function.Supplier.class);
-                    return supplier.get();
-                });
-
-        when(siteRepository.countByUserId(userId.toString()))
-                .thenReturn(Mono.just(10L));
-        when(siteRepository.findAllByUserId(eq(userId.toString()), any(Pageable.class)))
-                .thenReturn(Flux.empty());
-
-        when(cbFirestore.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> {
-                    Function<Throwable, Mono> fallback = invocation.getArgument(1);
-                    return fallback.apply(new RuntimeException("Circuit breaker open"));
-                });
-
-        // When
-        Mono<ListSitesResponseDto> result = siteService.getAllByUserId(userId, 0, 10);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(error ->
-                        error instanceof ResponseStatusException &&
-                                ((ResponseStatusException) error).getStatusCode().equals(HttpStatus.SERVICE_UNAVAILABLE))
-                .verify();
-    }
-
-    @Test
-    void getAllByUserId_WhenCircuitBreakerIsOpenOnFindAll_ShouldReturnServiceUnavailable() {
-        // Given
-        UUID userId = UUID.randomUUID();
-
-        when(siteCacheService.getSitesByUserId(eq(userId), anyInt(), anyInt(), any()))
-                .thenAnswer(invocation -> {
-                    var supplier = invocation.getArgument(3, java.util.function.Supplier.class);
-                    return supplier.get();
-                });
-
-        when(siteRepository.countByUserId(userId.toString()))
-                .thenReturn(Mono.just(10L));
-        when(siteRepository.findAllByUserId(eq(userId.toString()), any(Pageable.class)))
-                .thenReturn(Flux.just(createSiteReadDocument(UUID.randomUUID())));
-
-        when(cbFirestore.run(any(Mono.class), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        when(cbFirestore.run(any(Flux.class), any(Function.class)))
-                .thenAnswer(invocation -> {
-                    Function<Throwable, Flux> fallback = invocation.getArgument(1);
-                    return fallback.apply(new RuntimeException("Circuit breaker open"));
-                });
-
-        // When
-        Mono<ListSitesResponseDto> result = siteService.getAllByUserId(userId, 0, 10);
-
-        // Then
-        StepVerifier.create(result)
-                .expectErrorMatches(error ->
-                        error instanceof ResponseStatusException &&
-                                ((ResponseStatusException) error).getStatusCode().equals(HttpStatus.SERVICE_UNAVAILABLE))
-                .verify();
     }
 
     @Test
