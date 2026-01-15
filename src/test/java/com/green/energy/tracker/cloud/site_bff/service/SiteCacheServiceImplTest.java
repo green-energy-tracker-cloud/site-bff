@@ -2,8 +2,6 @@ package com.green.energy.tracker.cloud.site_bff.service;
 
 import com.green.energy.tracker.cloud.sitebff.web.model.ListSitesResponseDto;
 import com.green.energy.tracker.cloud.sitebff.web.model.SiteResponseDto;
-import io.github.resilience4j.retry.Retry;
-import io.github.resilience4j.retry.RetryConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,8 +39,6 @@ class SiteCacheServiceImplTest {
 
     private SiteCacheServiceImpl siteCacheService;
 
-    private Retry retryCache;
-
     private static final String PREFIX_KEY = "site";
     private static final Integer CACHE_TTL_SECONDS = 3600;
     private static final int DEFAULT_PAGE = 0;
@@ -50,13 +46,7 @@ class SiteCacheServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        RetryConfig retryConfig = RetryConfig.custom()
-                .maxAttempts(2)
-                .waitDuration(Duration.ofMillis(100))
-                .build();
-        retryCache = Retry.of("cache", retryConfig);
-
-        siteCacheService = new SiteCacheServiceImpl(siteRedisTemplate, siteListRedisTemplate, retryCache);
+        siteCacheService = new SiteCacheServiceImpl(siteRedisTemplate, siteListRedisTemplate);
 
         ReflectionTestUtils.setField(siteCacheService, "prefixKey", PREFIX_KEY);
         ReflectionTestUtils.setField(siteCacheService, "cacheTtlSeconds", CACHE_TTL_SECONDS);

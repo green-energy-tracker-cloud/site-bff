@@ -2,10 +2,8 @@ package com.green.energy.tracker.cloud.site_bff.service;
 
 import com.green.energy.tracker.cloud.sitebff.web.model.ListSitesResponseDto;
 import com.green.energy.tracker.cloud.sitebff.web.model.SiteResponseDto;
-import io.github.resilience4j.reactor.retry.RetryOperator;
-import io.github.resilience4j.retry.Retry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,6 +16,7 @@ import java.util.function.Supplier;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SiteCacheServiceImpl implements SiteCacheService {
 
     @Value("${spring.data.redis.prefix-key}")
@@ -31,18 +30,6 @@ public class SiteCacheServiceImpl implements SiteCacheService {
 
     private final ReactiveRedisTemplate<String, SiteResponseDto> siteRedisTemplate;
     private final ReactiveRedisTemplate<String, ListSitesResponseDto> siteListRedisTemplate;
-    private final Retry retryCache;
-
-    public SiteCacheServiceImpl(ReactiveRedisTemplate<String, SiteResponseDto> siteRedisTemplate,
-                                ReactiveRedisTemplate<String, ListSitesResponseDto> siteListRedisTemplate,
-                                @Qualifier("retryCache") Retry retryCache) {
-        this.siteRedisTemplate = siteRedisTemplate;
-        this.siteListRedisTemplate = siteListRedisTemplate;
-        this.retryCache = retryCache;
-
-        this.retryCache.getEventPublisher().onRetry(event -> log.warn("Retrying Cache. Attempt #{} due to: {}",
-                event.getNumberOfRetryAttempts(), Objects.nonNull(event.getLastThrowable()) ? event.getLastThrowable().getMessage() : ""));
-    }
 
     @Override
     public Mono<SiteResponseDto> getSite(UUID id, Supplier<Mono<SiteResponseDto>> dbFallback) {
@@ -63,12 +50,10 @@ public class SiteCacheServiceImpl implements SiteCacheService {
         return template
                 .opsForValue()
                 .get(cacheKey)
-                .transformDeferred(RetryOperator.of(retryCache))
                 .switchIfEmpty(
                         fallback.flatMap(dto ->
                                 template.opsForValue()
                                         .set(cacheKey, dto, Duration.ofSeconds(cacheTtlSeconds))
-                                        .transformDeferred(RetryOperator.of(retryCache))
                                         .thenReturn(dto)
                                         .onErrorResume(e -> {
                                             log.warn("Failed to cache {}. Reason: {}", logContext, e.getMessage());
